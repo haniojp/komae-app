@@ -274,24 +274,25 @@ const STATION_TO_KOMAE_MIN = {
   '狛江':     0,
 };
 
-// 各駅の座標
+// 各駅の座標（国土地理院・実測値）
+// 最寄り駅判定は「駅のホーム中心座標」を使用
 const STATIONS = [
-  {name:'新宿',    lat:35.6896, lng:139.7006, toKomae:45},
-  {name:'南新宿',  lat:35.6847, lng:139.7000, toKomae:43},
-  {name:'参宮橋',  lat:35.6791, lng:139.6965, toKomae:41},
-  {name:'代々木八幡',lat:35.6720,lng:139.6941, toKomae:39},
-  {name:'代々木上原',lat:35.6645,lng:139.6857, toKomae:37},
-  {name:'東北沢',  lat:35.6604, lng:139.6817, toKomae:35},
-  {name:'下北沢',  lat:35.6613, lng:139.6678, toKomae:33},
-  {name:'世田谷代田',lat:35.6585,lng:139.6554, toKomae:31},
-  {name:'梅ヶ丘',  lat:35.6568, lng:139.6452, toKomae:29},
-  {name:'豪徳寺',  lat:35.6544, lng:139.6360, toKomae:27},
-  {name:'経堂',    lat:35.6510, lng:139.6257, toKomae:24},
-  {name:'千歳船橋',lat:35.6450, lng:139.6147, toKomae:21},
-  {name:'祖師ヶ谷大蔵',lat:35.6380,lng:139.6033,toKomae:18},
-  {name:'成城学園前',lat:35.6332,lng:139.5918, toKomae:14},
-  {name:'喜多見',  lat:35.6274, lng:139.5759, toKomae:8},
-  {name:'狛江',    lat:35.6219, lng:139.5655, toKomae:0},
+  {name:'新宿',      lat:35.68950, lng:139.70050, toKomae:45},
+  {name:'南新宿',    lat:35.68383, lng:139.69916, toKomae:43},
+  {name:'参宮橋',    lat:35.67874, lng:139.69538, toKomae:41},
+  {name:'代々木八幡', lat:35.67164, lng:139.69324, toKomae:39},
+  {name:'代々木上原', lat:35.66421, lng:139.68547, toKomae:37},
+  {name:'東北沢',    lat:35.66014, lng:139.68101, toKomae:35},
+  {name:'下北沢',    lat:35.66138, lng:139.66792, toKomae:33},
+  {name:'世田谷代田', lat:35.65878, lng:139.65528, toKomae:31},
+  {name:'梅ヶ丘',    lat:35.65705, lng:139.64465, toKomae:29},
+  {name:'豪徳寺',    lat:35.65419, lng:139.63623, toKomae:27},
+  {name:'経堂',      lat:35.64990, lng:139.62476, toKomae:24},
+  {name:'千歳船橋',  lat:35.64479, lng:139.61369, toKomae:21},
+  {name:'祖師ヶ谷大蔵',lat:35.63786,lng:139.60203, toKomae:18},
+  {name:'成城学園前', lat:35.63229, lng:139.58997, toKomae:14},
+  {name:'喜多見',    lat:35.62706, lng:139.57538, toKomae:8},
+  {name:'狛江',      lat:35.62142, lng:139.56494, toKomae:0},
 ];
 
 // ============================================================
@@ -476,7 +477,15 @@ function updateCD(){
 
 function openMap(e){
   e.preventDefault();
-  const url=`https://www.google.com/maps/dir/?api=1&origin=${S.lat},${S.lng}&destination=35.6219,139.5655&travelmode=walking`;
+  // 現在地 → 最寄り駅（徒歩）→ 狛江駅（電車）の乗換ルート
+  const stLat = S.station ? S.station.lat : 35.62142;
+  const stLng = S.station ? S.station.lng : 139.56494;
+  // Google Maps 乗換案内：出発地=現在地、目的地=狛江駅、電車+徒歩モード
+  const url = `https://www.google.com/maps/dir/?api=1`
+    + `&origin=${S.lat},${S.lng}`
+    + `&destination=35.62142,139.56494`
+    + `&travelmode=transit`
+    + `&transit_mode=rail`;
   window.open(url,'_blank');
 }
 

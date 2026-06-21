@@ -332,13 +332,53 @@ function init(){
 }
 
 async function geocode(){
+  // まず国土地理院APIを試す、失敗したらNominatim(OpenStreetMap)を使う
+  let success = false;
+
+  // 方法①：国土地理院API
   try {
     const r = await fetch(
       `https://mreversegeocoder.gsi.go.jp/reverse-geocoder/LonLatToAddress?lon=${S.lng}&lat=${S.lat}`
     );
     const d = await r.json();
-    S.locName = d?.results?.lv01Nm || '現在地';
-  } catch(e){ S.locName='現在地'; }
+    if(d && d.results) {
+      const res = d.results;
+      // muniNm=市区町村名, lv01Nm=大字町丁目
+      const city = res.muniNm || '';
+      const town = res.lv01Nm || '';
+      if(city || town) {
+        S.locName = (city + town) || '現在地';
+        success = true;
+      }
+    }
+  } catch(e){}
+
+  // 方法②：Nominatim (OpenStreetMap) - 国土地理院が失敗した場合
+  if(!success){
+    try {
+      const r = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${S.lat}&lon=${S.lng}&format=json&accept-language=ja`,
+        { headers: { 'Accept-Language': 'ja' } }
+      );
+      const d = await r.json();
+      if(d && d.address) {
+        const a = d.address;
+        // 市区町村＋町名を組み合わせる
+        const city  = a.city || a.town || a.village || a.county || '';
+        const ward  = a.suburb || a.neighbourhood || a.quarter || '';
+        const district = a.city_district || '';
+        // 優先順位：区名+町名 ＞ 市名+町名 ＞ 市名のみ
+        if(district && ward)      S.locName = district + ward;
+        else if(district)         S.locName = district;
+        else if(city && ward)     S.locName = city + ward;
+        else if(city)             S.locName = city;
+        else                      S.locName = '現在地';
+        success = true;
+      }
+    } catch(e){}
+  }
+
+  if(!success) S.locName = '現在地';
   compute();
 }
 

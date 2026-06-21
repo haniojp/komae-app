@@ -9,390 +9,140 @@
 <meta name="theme-color" content="#0a0f1e">
 <title>Smart Transit Countdown</title>
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon.png">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+:root {
+  --bg:#0a0f1e; --bg2:#111827; --bg3:#1a2235; --card:#1e2d45;
+  --border:rgba(255,255,255,0.08); --text:#f0f4ff; --muted:#8899bb;
+  --accent:#3b82f6; --green:#22c55e; --yellow:#eab308; --red:#ef4444;
+}
+html,body { height:100%; background:var(--bg); color:var(--text);
+  font-family:-apple-system,'Helvetica Neue',sans-serif; overflow-x:hidden; }
+body { display:flex; flex-direction:column; min-height:100vh;
+  min-height:-webkit-fill-available;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
 
-  :root {
-    --bg: #0a0f1e;
-    --bg2: #111827;
-    --bg3: #1a2235;
-    --card: #1e2d45;
-    --border: rgba(255,255,255,0.08);
-    --text: #f0f4ff;
-    --muted: #8899bb;
-    --accent: #3b82f6;
-    --green: #22c55e;
-    --yellow: #eab308;
-    --red: #ef4444;
-    --orange: #f97316;
-  }
+.header { padding:14px 20px 6px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+.header-title { font-size:13px; font-weight:600; color:var(--muted); letter-spacing:.08em; text-transform:uppercase; }
+.header-dest { font-size:13px; font-weight:700; color:var(--accent);
+  background:rgba(59,130,246,.12); padding:4px 10px; border-radius:20px;
+  border:1px solid rgba(59,130,246,.3); }
 
-  html, body {
-    height: 100%;
-    background: var(--bg);
-    color: var(--text);
-    font-family: -apple-system, 'Helvetica Neue', sans-serif;
-    overflow-x: hidden;
-  }
+.train-bar { margin:4px 16px 0; background:var(--bg3); border-radius:12px;
+  padding:10px 16px; display:flex; align-items:center; justify-content:space-between;
+  border:1px solid var(--border); flex-shrink:0; gap:8px; }
+.tb-item { text-align:center; }
+.tb-label { font-size:10px; color:var(--muted); margin-bottom:2px; }
+.tb-value { font-size:15px; font-weight:700; color:var(--text); }
+.tb-div { width:1px; height:32px; background:var(--border); }
+.train-badge { font-size:11px; font-weight:700; padding:3px 8px; border-radius:6px;
+  background:rgba(59,130,246,.2); color:#60a5fa; border:1px solid rgba(59,130,246,.3); }
 
-  body {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    min-height: -webkit-fill-available;
-    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-  }
+.countdown-section { flex:1; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; padding:8px 20px; }
+.cd-label { font-size:11px; font-weight:600; letter-spacing:.15em;
+  text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
 
-  /* Header */
-  .header {
-    padding: 16px 20px 8px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-shrink: 0;
-  }
-  .header-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--muted);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-  .header-dest {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--accent);
-    background: rgba(59,130,246,0.12);
-    padding: 4px 10px;
-    border-radius: 20px;
-    border: 1px solid rgba(59,130,246,0.3);
-  }
+.cd-ring { position:relative; width:210px; height:210px; margin-bottom:14px; }
+.cd-ring svg { position:absolute; top:0; left:0; transform:rotate(-90deg); }
+.ring-bg { fill:none; stroke:rgba(255,255,255,.06); stroke-width:6; }
+.ring-fg { fill:none; stroke-width:6; stroke-linecap:round; transition:stroke-dashoffset 1s linear,stroke .5s ease; }
+.cd-inner { position:absolute; inset:0; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; }
+.cd-time { font-size:56px; font-weight:700; font-variant-numeric:tabular-nums;
+  letter-spacing:-2px; transition:color .5s ease; line-height:1; }
+.cd-sub { font-size:11px; color:var(--muted); margin-top:4px; }
 
-  /* Train info bar */
-  .train-bar {
-    margin: 4px 20px 0;
-    background: var(--bg3);
-    border-radius: 12px;
-    padding: 10px 16px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border: 1px solid var(--border);
-    flex-shrink: 0;
-  }
-  .train-bar-label {
-    font-size: 11px;
-    color: var(--muted);
-    margin-bottom: 2px;
-  }
-  .train-bar-value {
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--text);
-  }
-  .train-bar-divider {
-    width: 1px;
-    height: 32px;
-    background: var(--border);
-  }
-  .train-type-badge {
-    font-size: 11px;
-    font-weight: 700;
-    padding: 3px 8px;
-    border-radius: 6px;
-    background: rgba(59,130,246,0.2);
-    color: #60a5fa;
-    border: 1px solid rgba(59,130,246,0.3);
-  }
+.map-btn { display:flex; align-items:center; gap:8px;
+  background:rgba(59,130,246,.15); border:1.5px solid rgba(59,130,246,.4);
+  color:#60a5fa; font-size:15px; font-weight:600; padding:11px 26px;
+  border-radius:50px; cursor:pointer; text-decoration:none; transition:all .2s; }
+.map-btn:active { transform:scale(.96); background:rgba(59,130,246,.25); }
+.map-btn svg { width:17px; height:17px; }
 
-  /* Countdown section */
-  .countdown-section {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 10px 20px;
-  }
+.cards { padding:0 14px 14px; display:flex; flex-direction:column; gap:8px; flex-shrink:0; }
+.card-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:11px 13px; }
+.c-label { font-size:10px; font-weight:600; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--muted); margin-bottom:4px; display:flex; align-items:center; gap:4px; }
+.c-val { font-size:15px; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.c-val.sm { font-size:13px; }
+.c-val.ac { color:#60a5fa; }
+.c-val.gr { color:var(--green); }
 
-  .countdown-label {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 8px;
-  }
+.card-wide { background:var(--card); border:1px solid var(--border); border-radius:14px;
+  padding:11px 14px; display:flex; align-items:center; justify-content:space-between; }
+.home-time { font-size:22px; font-weight:700; color:var(--green); }
+.home-note { font-size:10px; color:var(--muted); margin-top:2px; }
 
-  .countdown-ring {
-    position: relative;
-    width: 220px;
-    height: 220px;
-    margin-bottom: 16px;
-  }
-  .countdown-ring svg {
-    position: absolute;
-    top: 0; left: 0;
-    transform: rotate(-90deg);
-  }
-  .countdown-ring-bg {
-    fill: none;
-    stroke: rgba(255,255,255,0.06);
-    stroke-width: 6;
-  }
-  .countdown-ring-progress {
-    fill: none;
-    stroke-width: 6;
-    stroke-linecap: round;
-    transition: stroke-dashoffset 1s linear, stroke 0.5s ease;
-  }
-  .countdown-inner {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-  }
-  .countdown-time {
-    font-size: 58px;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-    letter-spacing: -2px;
-    transition: color 0.5s ease;
-    line-height: 1;
-  }
-  .countdown-sub {
-    font-size: 11px;
-    color: var(--muted);
-    margin-top: 4px;
-    letter-spacing: 0.05em;
-  }
+.overlay { position:fixed; inset:0; background:var(--bg); display:flex;
+  flex-direction:column; align-items:center; justify-content:center;
+  z-index:100; gap:16px; padding:40px; }
+.overlay.hidden { display:none; }
+.spinner { width:40px; height:40px; border:3px solid rgba(59,130,246,.2);
+  border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.ov-text { font-size:16px; font-weight:500; color:var(--muted); text-align:center; line-height:1.7; }
+.retry-btn { background:none; border:1px solid var(--border); color:var(--muted);
+  font-size:13px; padding:8px 20px; border-radius:20px; cursor:pointer; margin-top:4px; }
 
-  /* Map button */
-  .map-btn {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: rgba(59,130,246,0.15);
-    border: 1.5px solid rgba(59,130,246,0.4);
-    color: #60a5fa;
-    font-size: 15px;
-    font-weight: 600;
-    padding: 12px 28px;
-    border-radius: 50px;
-    cursor: pointer;
-    text-decoration: none;
-    transition: all 0.2s;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .map-btn:active {
-    transform: scale(0.96);
-    background: rgba(59,130,246,0.25);
-  }
-  .map-btn svg {
-    width: 18px;
-    height: 18px;
-  }
+.notice { position:fixed; top:56px; left:16px; right:16px;
+  background:rgba(234,179,8,.15); border:1px solid rgba(234,179,8,.4);
+  border-radius:12px; padding:10px 16px; font-size:13px; font-weight:600;
+  color:#fbbf24; text-align:center; z-index:50;
+  opacity:0; transform:translateY(-8px); transition:all .3s; pointer-events:none; }
+.notice.show { opacity:1; transform:translateY(0); }
 
-  /* Cards section */
-  .cards-section {
-    padding: 0 16px 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    flex-shrink: 0;
-  }
-
-  .card-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-  }
-
-  .card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 12px 14px;
-  }
-  .card-label {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 5px;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-  }
-  .card-label svg { width: 12px; height: 12px; opacity: 0.7; }
-  .card-value {
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .card-value.small { font-size: 13px; }
-  .card-value.accent { color: #60a5fa; }
-  .card-value.green { color: var(--green); }
-
-  .card-wide {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 12px 14px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .card-wide-left .card-label { margin-bottom: 3px; }
-  .card-wide-right {
-    text-align: right;
-  }
-  .arrival-time {
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--green);
-  }
-  .arrival-label {
-    font-size: 10px;
-    color: var(--muted);
-    margin-top: 2px;
-  }
-
-  /* Status / loading */
-  .status-overlay {
-    position: fixed;
-    inset: 0;
-    background: var(--bg);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
-    gap: 16px;
-    padding: 40px;
-  }
-  .status-overlay.hidden { display: none; }
-  .spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid rgba(59,130,246,0.2);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .status-text {
-    font-size: 16px;
-    font-weight: 500;
-    color: var(--muted);
-    text-align: center;
-    line-height: 1.6;
-  }
-  .status-icon { font-size: 48px; }
-
-  /* Next train alert */
-  .next-train-notice {
-    position: fixed;
-    top: 60px;
-    left: 20px;
-    right: 20px;
-    background: rgba(234,179,8,0.15);
-    border: 1px solid rgba(234,179,8,0.4);
-    border-radius: 12px;
-    padding: 10px 16px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #fbbf24;
-    text-align: center;
-    z-index: 50;
-    opacity: 0;
-    transform: translateY(-10px);
-    transition: all 0.3s;
-  }
-  .next-train-notice.show {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  /* Pulse animation on urgent */
-  @keyframes pulse-red {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.6; }
-  }
-  .urgent { animation: pulse-red 1s ease-in-out infinite; }
-
-  .refresh-btn {
-    background: none;
-    border: 1px solid var(--border);
-    color: var(--muted);
-    font-size: 12px;
-    padding: 6px 14px;
-    border-radius: 20px;
-    cursor: pointer;
-    margin-top: 8px;
-  }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.55} }
+.urgent { animation:pulse 1s ease-in-out infinite; }
 </style>
 </head>
 <body>
 
-<!-- Loading overlay -->
-<div class="status-overlay" id="overlay">
-  <div class="spinner" id="spinner"></div>
-  <div class="status-icon" id="overlayIcon" style="display:none">📍</div>
-  <div class="status-text" id="overlayText">現在地を取得中…<br>位置情報の許可をお願いします</div>
-  <button class="refresh-btn" id="retryBtn" style="display:none" onclick="init()">再試行する</button>
+<div class="overlay" id="overlay">
+  <div class="spinner" id="spin"></div>
+  <div class="ov-text" id="ovText">現在地を取得中…<br>位置情報の許可をお願いします</div>
+  <button class="retry-btn" id="retryBtn" style="display:none" onclick="init()">再試行する</button>
 </div>
 
-<!-- Next train notice -->
-<div class="next-train-notice" id="nextTrainNotice">⏭ 次の電車に切り替えました</div>
+<div class="notice" id="notice"></div>
 
-<!-- Header -->
 <div class="header">
   <div class="header-title">Smart Transit</div>
   <div class="header-dest">🚉 狛江駅 行き</div>
 </div>
 
-<!-- Train info bar -->
 <div class="train-bar">
-  <div>
-    <div class="train-bar-label">出発駅</div>
-    <div class="train-bar-value" id="depStation">—</div>
+  <div class="tb-item">
+    <div class="tb-label">乗車駅</div>
+    <div class="tb-value" id="depStation">—</div>
   </div>
-  <div class="train-bar-divider"></div>
-  <div>
-    <div class="train-bar-label">出発時刻</div>
-    <div class="train-bar-value" id="depTime">—:—</div>
+  <div class="tb-div"></div>
+  <div class="tb-item">
+    <div class="tb-label">出発時刻</div>
+    <div class="tb-value" id="depTime">—:—</div>
   </div>
-  <div class="train-bar-divider"></div>
-  <div>
-    <div class="train-bar-label">種別</div>
-    <div class="train-type-badge" id="trainType">各停</div>
+  <div class="tb-div"></div>
+  <div class="tb-item">
+    <div class="tb-label">種別</div>
+    <div class="train-badge" id="trainType">—</div>
   </div>
 </div>
 
-<!-- Countdown -->
 <div class="countdown-section">
-  <div class="countdown-label">出発まで</div>
-  <div class="countdown-ring">
-    <svg viewBox="0 0 220 220" width="220" height="220">
-      <circle class="countdown-ring-bg" cx="110" cy="110" r="100"/>
-      <circle class="countdown-ring-progress" id="ringProgress" cx="110" cy="110" r="100"
-        stroke-dasharray="628" stroke-dashoffset="0"/>
+  <div class="cd-label">出発まで</div>
+  <div class="cd-ring">
+    <svg viewBox="0 0 210 210" width="210" height="210">
+      <circle class="ring-bg" cx="105" cy="105" r="96"/>
+      <circle class="ring-fg" id="ringFg" cx="105" cy="105" r="96"
+        stroke-dasharray="603" stroke-dashoffset="0"/>
     </svg>
-    <div class="countdown-inner">
-      <div class="countdown-time" id="countdownDisplay">—:——</div>
-      <div class="countdown-sub" id="countdownSub">計算中...</div>
+    <div class="cd-inner">
+      <div class="cd-time" id="cdTime">—:——</div>
+      <div class="cd-sub" id="cdSub">計算中...</div>
     </div>
   </div>
-
-  <a class="map-btn" id="mapBtn" href="#" onclick="openMap(event)">
+  <a class="map-btn" href="#" onclick="openMap(event)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6-3V7m6 16l4.553-2.276A1 1 0 0021 19.382V8.618a1 1 0 00-.553-.894L15 5m0 15V5m0 0L9 7"/>
     </svg>
@@ -400,573 +150,354 @@
   </a>
 </div>
 
-<!-- Info cards -->
-<div class="cards-section">
+<div class="cards">
   <div class="card-row">
     <div class="card">
-      <div class="card-label">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg>
-        現在地
-      </div>
-      <div class="card-value small" id="currentLocation">取得中...</div>
+      <div class="c-label">📍 現在地</div>
+      <div class="c-val sm" id="curLoc">取得中...</div>
     </div>
     <div class="card">
-      <div class="card-label">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><circle cx="12" cy="11" r="3"/></svg>
-        最寄り駅
-      </div>
-      <div class="card-value accent" id="nearestStation">—</div>
+      <div class="c-label">🚉 最寄り駅</div>
+      <div class="c-val ac" id="nearSt">—</div>
     </div>
   </div>
   <div class="card-row">
     <div class="card">
-      <div class="card-label">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-        徒歩所要時間
-      </div>
-      <div class="card-value" id="walkTime">— 分</div>
+      <div class="c-label">🚶 徒歩時間</div>
+      <div class="c-val" id="walkT">— 分</div>
     </div>
     <div class="card">
-      <div class="card-label">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-        次の電車
-      </div>
-      <div class="card-value accent" id="nextTrainTime">—:—</div>
+      <div class="c-label">🕐 次の電車</div>
+      <div class="c-val ac" id="nextT">—:—</div>
     </div>
   </div>
   <div class="card-wide">
-    <div class="card-wide-left">
-      <div class="card-label">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        自宅到着予定
-      </div>
-      <div class="arrival-time" id="homeArrival">—:—</div>
-      <div class="arrival-label">狛江駅着 +10分</div>
+    <div>
+      <div class="c-label">🏠 自宅到着予定</div>
+      <div class="home-time" id="homeArr">—:—</div>
+      <div class="home-note">狛江駅着 +10分</div>
     </div>
-    <div class="card-wide-right">
-      <div class="card-label" style="justify-content:flex-end">狛江駅 着</div>
-      <div class="card-value accent" style="font-size:18px" id="komaeArrival">—:—</div>
-      <div class="arrival-label" id="routeInfo">小田急線</div>
+    <div style="text-align:right">
+      <div class="c-label" style="justify-content:flex-end">🎯 狛江駅 着</div>
+      <div class="c-val ac" style="font-size:18px" id="komaeArr">—:—</div>
+      <div class="home-note" id="routeNote">小田急線</div>
     </div>
   </div>
 </div>
 
 <script>
 // ============================================================
-// 小田急線 時刻表データ（平日・土休日 狛江駅方面）
-// 各停/急行/快速急行を含む代表的な時刻
+// 小田急線 各駅→狛江駅 時刻表
+// 狛江駅は各駅停車のみ停車。急行・快急は成城学園前で各停に乗り換え。
+// 下記は各駅の「狛江方面」発車時刻（平日）
+// 狛江駅着時刻も収録
 // ============================================================
-const TIMETABLE = {
-  weekday: [
-    {h:5,m:2,type:'各停',from:'新宿',komaeArr:'5:47',via:'小田急'},
-    {h:5,m:18,type:'各停',from:'新宿',komaeArr:'6:03',via:'小田急'},
-    {h:5,m:35,type:'各停',from:'新宿',komaeArr:'6:20',via:'小田急'},
-    {h:5,m:52,type:'各停',from:'新宿',komaeArr:'6:37',via:'小田急'},
-    {h:6,m:5,type:'各停',from:'新宿',komaeArr:'6:50',via:'小田急'},
-    {h:6,m:18,type:'各停',from:'新宿',komaeArr:'7:03',via:'小田急'},
-    {h:6,m:30,type:'急行',from:'新宿',komaeArr:'7:00',via:'小田急急行'},
-    {h:6,m:42,type:'各停',from:'新宿',komaeArr:'7:27',via:'小田急'},
-    {h:6,m:54,type:'各停',from:'新宿',komaeArr:'7:39',via:'小田急'},
-    {h:7,m:6,type:'急行',from:'新宿',komaeArr:'7:33',via:'小田急急行'},
-    {h:7,m:15,type:'各停',from:'新宿',komaeArr:'8:00',via:'小田急'},
-    {h:7,m:24,type:'急行',from:'新宿',komaeArr:'7:51',via:'小田急急行'},
-    {h:7,m:36,type:'各停',from:'新宿',komaeArr:'8:21',via:'小田急'},
-    {h:7,m:45,type:'快急',from:'新宿',komaeArr:'8:05',via:'小田急快速急行'},
-    {h:7,m:54,type:'急行',from:'新宿',komaeArr:'8:21',via:'小田急急行'},
-    {h:8,m:3,type:'各停',from:'新宿',komaeArr:'8:48',via:'小田急'},
-    {h:8,m:12,type:'急行',from:'新宿',komaeArr:'8:39',via:'小田急急行'},
-    {h:8,m:24,type:'各停',from:'新宿',komaeArr:'9:09',via:'小田急'},
-    {h:8,m:36,type:'急行',from:'新宿',komaeArr:'9:03',via:'小田急急行'},
-    {h:8,m:48,type:'各停',from:'新宿',komaeArr:'9:33',via:'小田急'},
-    {h:9,m:0,type:'急行',from:'新宿',komaeArr:'9:27',via:'小田急急行'},
-    {h:9,m:12,type:'各停',from:'新宿',komaeArr:'9:57',via:'小田急'},
-    {h:9,m:24,type:'急行',from:'新宿',komaeArr:'9:51',via:'小田急急行'},
-    {h:9,m:36,type:'各停',from:'新宿',komaeArr:'10:21',via:'小田急'},
-    {h:9,m:48,type:'急行',from:'新宿',komaeArr:'10:15',via:'小田急急行'},
-    {h:10,m:0,type:'各停',from:'新宿',komaeArr:'10:45',via:'小田急'},
-    {h:10,m:15,type:'急行',from:'新宿',komaeArr:'10:42',via:'小田急急行'},
-    {h:10,m:30,type:'各停',from:'新宿',komaeArr:'11:15',via:'小田急'},
-    {h:10,m:45,type:'急行',from:'新宿',komaeArr:'11:12',via:'小田急急行'},
-    {h:11,m:0,type:'各停',from:'新宿',komaeArr:'11:45',via:'小田急'},
-    {h:11,m:15,type:'急行',from:'新宿',komaeArr:'11:42',via:'小田急急行'},
-    {h:11,m:30,type:'各停',from:'新宿',komaeArr:'12:15',via:'小田急'},
-    {h:11,m:45,type:'急行',from:'新宿',komaeArr:'12:12',via:'小田急急行'},
-    {h:12,m:0,type:'各停',from:'新宿',komaeArr:'12:45',via:'小田急'},
-    {h:12,m:15,type:'急行',from:'新宿',komaeArr:'12:42',via:'小田急急行'},
-    {h:12,m:30,type:'各停',from:'新宿',komaeArr:'13:15',via:'小田急'},
-    {h:12,m:45,type:'急行',from:'新宿',komaeArr:'13:12',via:'小田急急行'},
-    {h:13,m:0,type:'各停',from:'新宿',komaeArr:'13:45',via:'小田急'},
-    {h:13,m:15,type:'急行',from:'新宿',komaeArr:'13:42',via:'小田急急行'},
-    {h:13,m:30,type:'各停',from:'新宿',komaeArr:'14:15',via:'小田急'},
-    {h:13,m:45,type:'急行',from:'新宿',komaeArr:'14:12',via:'小田急急行'},
-    {h:14,m:0,type:'各停',from:'新宿',komaeArr:'14:45',via:'小田急'},
-    {h:14,m:15,type:'急行',from:'新宿',komaeArr:'14:42',via:'小田急急行'},
-    {h:14,m:30,type:'各停',from:'新宿',komaeArr:'15:15',via:'小田急'},
-    {h:14,m:45,type:'急行',from:'新宿',komaeArr:'15:12',via:'小田急急行'},
-    {h:15,m:0,type:'各停',from:'新宿',komaeArr:'15:45',via:'小田急'},
-    {h:15,m:15,type:'急行',from:'新宿',komaeArr:'15:42',via:'小田急急行'},
-    {h:15,m:30,type:'各停',from:'新宿',komaeArr:'16:15',via:'小田急'},
-    {h:15,m:45,type:'急行',from:'新宿',komaeArr:'16:12',via:'小田急急行'},
-    {h:16,m:0,type:'各停',from:'新宿',komaeArr:'16:45',via:'小田急'},
-    {h:16,m:12,type:'急行',from:'新宿',komaeArr:'16:39',via:'小田急急行'},
-    {h:16,m:24,type:'各停',from:'新宿',komaeArr:'17:09',via:'小田急'},
-    {h:16,m:36,type:'急行',from:'新宿',komaeArr:'17:03',via:'小田急急行'},
-    {h:16,m:48,type:'各停',from:'新宿',komaeArr:'17:33',via:'小田急'},
-    {h:17,m:0,type:'急行',from:'新宿',komaeArr:'17:27',via:'小田急急行'},
-    {h:17,m:12,type:'各停',from:'新宿',komaeArr:'17:57',via:'小田急'},
-    {h:17,m:21,type:'快急',from:'新宿',komaeArr:'17:44',via:'小田急快速急行'},
-    {h:17,m:33,type:'急行',from:'新宿',komaeArr:'18:00',via:'小田急急行'},
-    {h:17,m:45,type:'各停',from:'新宿',komaeArr:'18:30',via:'小田急'},
-    {h:17,m:54,type:'急行',from:'新宿',komaeArr:'18:21',via:'小田急急行'},
-    {h:18,m:6,type:'各停',from:'新宿',komaeArr:'18:51',via:'小田急'},
-    {h:18,m:15,type:'急行',from:'新宿',komaeArr:'18:42',via:'小田急急行'},
-    {h:18,m:27,type:'各停',from:'新宿',komaeArr:'19:12',via:'小田急'},
-    {h:18,m:36,type:'急行',from:'新宿',komaeArr:'19:03',via:'小田急急行'},
-    {h:18,m:48,type:'各停',from:'新宿',komaeArr:'19:33',via:'小田急'},
-    {h:18,m:57,type:'急行',from:'新宿',komaeArr:'19:24',via:'小田急急行'},
-    {h:19,m:9,type:'各停',from:'新宿',komaeArr:'19:54',via:'小田急'},
-    {h:19,m:21,type:'急行',from:'新宿',komaeArr:'19:48',via:'小田急急行'},
-    {h:19,m:33,type:'各停',from:'新宿',komaeArr:'20:18',via:'小田急'},
-    {h:19,m:45,type:'急行',from:'新宿',komaeArr:'20:12',via:'小田急急行'},
-    {h:19,m:57,type:'各停',from:'新宿',komaeArr:'20:42',via:'小田急'},
-    {h:20,m:9,type:'急行',from:'新宿',komaeArr:'20:36',via:'小田急急行'},
-    {h:20,m:24,type:'各停',from:'新宿',komaeArr:'21:09',via:'小田急'},
-    {h:20,m:39,type:'急行',from:'新宿',komaeArr:'21:06',via:'小田急急行'},
-    {h:20,m:54,type:'各停',from:'新宿',komaeArr:'21:39',via:'小田急'},
-    {h:21,m:9,type:'急行',from:'新宿',komaeArr:'21:36',via:'小田急急行'},
-    {h:21,m:24,type:'各停',from:'新宿',komaeArr:'22:09',via:'小田急'},
-    {h:21,m:39,type:'急行',from:'新宿',komaeArr:'22:06',via:'小田急急行'},
-    {h:21,m:54,type:'各停',from:'新宿',komaeArr:'22:39',via:'小田急'},
-    {h:22,m:9,type:'急行',from:'新宿',komaeArr:'22:36',via:'小田急急行'},
-    {h:22,m:27,type:'各停',from:'新宿',komaeArr:'23:12',via:'小田急'},
-    {h:22,m:45,type:'各停',from:'新宿',komaeArr:'23:30',via:'小田急'},
-    {h:23,m:3,type:'各停',from:'新宿',komaeArr:'23:48',via:'小田急'},
-    {h:23,m:24,type:'各停',from:'新宿',komaeArr:'0:09',via:'小田急'},
-    {h:23,m:48,type:'各停',from:'新宿',komaeArr:'0:33',via:'小田急'},
-  ],
-  holiday: [
-    {h:5,m:2,type:'各停',from:'新宿',komaeArr:'5:47',via:'小田急'},
-    {h:5,m:22,type:'各停',from:'新宿',komaeArr:'6:07',via:'小田急'},
-    {h:5,m:45,type:'各停',from:'新宿',komaeArr:'6:30',via:'小田急'},
-    {h:6,m:5,type:'各停',from:'新宿',komaeArr:'6:50',via:'小田急'},
-    {h:6,m:25,type:'急行',from:'新宿',komaeArr:'6:52',via:'小田急急行'},
-    {h:6,m:45,type:'各停',from:'新宿',komaeArr:'7:30',via:'小田急'},
-    {h:7,m:5,type:'急行',from:'新宿',komaeArr:'7:32',via:'小田急急行'},
-    {h:7,m:25,type:'各停',from:'新宿',komaeArr:'8:10',via:'小田急'},
-    {h:7,m:45,type:'急行',from:'新宿',komaeArr:'8:12',via:'小田急急行'},
-    {h:8,m:5,type:'各停',from:'新宿',komaeArr:'8:50',via:'小田急'},
-    {h:8,m:25,type:'急行',from:'新宿',komaeArr:'8:52',via:'小田急急行'},
-    {h:8,m:45,type:'各停',from:'新宿',komaeArr:'9:30',via:'小田急'},
-    {h:9,m:5,type:'急行',from:'新宿',komaeArr:'9:32',via:'小田急急行'},
-    {h:9,m:25,type:'各停',from:'新宿',komaeArr:'10:10',via:'小田急'},
-    {h:9,m:45,type:'急行',from:'新宿',komaeArr:'10:12',via:'小田急急行'},
-    {h:10,m:5,type:'各停',from:'新宿',komaeArr:'10:50',via:'小田急'},
-    {h:10,m:25,type:'急行',from:'新宿',komaeArr:'10:52',via:'小田急急行'},
-    {h:10,m:45,type:'各停',from:'新宿',komaeArr:'11:30',via:'小田急'},
-    {h:11,m:5,type:'急行',from:'新宿',komaeArr:'11:32',via:'小田急急行'},
-    {h:11,m:25,type:'各停',from:'新宿',komaeArr:'12:10',via:'小田急'},
-    {h:11,m:45,type:'急行',from:'新宿',komaeArr:'12:12',via:'小田急急行'},
-    {h:12,m:5,type:'各停',from:'新宿',komaeArr:'12:50',via:'小田急'},
-    {h:12,m:25,type:'急行',from:'新宿',komaeArr:'12:52',via:'小田急急行'},
-    {h:12,m:45,type:'各停',from:'新宿',komaeArr:'13:30',via:'小田急'},
-    {h:13,m:5,type:'急行',from:'新宿',komaeArr:'13:32',via:'小田急急行'},
-    {h:13,m:25,type:'各停',from:'新宿',komaeArr:'14:10',via:'小田急'},
-    {h:13,m:45,type:'急行',from:'新宿',komaeArr:'14:12',via:'小田急急行'},
-    {h:14,m:5,type:'各停',from:'新宿',komaeArr:'14:50',via:'小田急'},
-    {h:14,m:25,type:'急行',from:'新宿',komaeArr:'14:52',via:'小田急急行'},
-    {h:14,m:45,type:'各停',from:'新宿',komaeArr:'15:30',via:'小田急'},
-    {h:15,m:5,type:'急行',from:'新宿',komaeArr:'15:32',via:'小田急急行'},
-    {h:15,m:25,type:'各停',from:'新宿',komaeArr:'16:10',via:'小田急'},
-    {h:15,m:45,type:'急行',from:'新宿',komaeArr:'16:12',via:'小田急急行'},
-    {h:16,m:5,type:'各停',from:'新宿',komaeArr:'16:50',via:'小田急'},
-    {h:16,m:25,type:'急行',from:'新宿',komaeArr:'16:52',via:'小田急急行'},
-    {h:16,m:45,type:'各停',from:'新宿',komaeArr:'17:30',via:'小田急'},
-    {h:17,m:5,type:'急行',from:'新宿',komaeArr:'17:32',via:'小田急急行'},
-    {h:17,m:25,type:'各停',from:'新宿',komaeArr:'18:10',via:'小田急'},
-    {h:17,m:45,type:'急行',from:'新宿',komaeArr:'18:12',via:'小田急急行'},
-    {h:18,m:5,type:'各停',from:'新宿',komaeArr:'18:50',via:'小田急'},
-    {h:18,m:25,type:'急行',from:'新宿',komaeArr:'18:52',via:'小田急急行'},
-    {h:18,m:45,type:'各停',from:'新宿',komaeArr:'19:30',via:'小田急'},
-    {h:19,m:5,type:'急行',from:'新宿',komaeArr:'19:32',via:'小田急急行'},
-    {h:19,m:25,type:'各停',from:'新宿',komaeArr:'20:10',via:'小田急'},
-    {h:19,m:45,type:'急行',from:'新宿',komaeArr:'20:12',via:'小田急急行'},
-    {h:20,m:5,type:'各停',from:'新宿',komaeArr:'20:50',via:'小田急'},
-    {h:20,m:25,type:'急行',from:'新宿',komaeArr:'20:52',via:'小田急急行'},
-    {h:20,m:45,type:'各停',from:'新宿',komaeArr:'21:30',via:'小田急'},
-    {h:21,m:5,type:'急行',from:'新宿',komaeArr:'21:32',via:'小田急急行'},
-    {h:21,m:27,type:'各停',from:'新宿',komaeArr:'22:12',via:'小田急'},
-    {h:21,m:50,type:'各停',from:'新宿',komaeArr:'22:35',via:'小田急'},
-    {h:22,m:13,type:'各停',from:'新宿',komaeArr:'22:58',via:'小田急'},
-    {h:22,m:36,type:'各停',from:'新宿',komaeArr:'23:21',via:'小田急'},
-    {h:23,m:0,type:'各停',from:'新宿',komaeArr:'23:45',via:'小田急'},
-    {h:23,m:24,type:'各停',from:'新宿',komaeArr:'0:09',via:'小田急'},
-    {h:23,m:48,type:'各停',from:'新宿',komaeArr:'0:33',via:'小田急'},
-  ]
+
+// 狛江駅に停まる各停の時刻（新宿→狛江 所要約45分、各駅間約2分）
+// 各駅の発車時刻 = 狛江着時刻 - 各駅から狛江までの所要時間
+
+// 狛江駅到着時刻リスト（平日）- これをベースに各駅の発車時刻を逆算
+const KOMAE_ARR_WEEKDAY = [
+  {h:5,m:47,type:'各停'},{h:6,m:3,type:'各停'},{h:6,m:16,type:'各停'},
+  {h:6,m:28,type:'各停'},{h:6,m:40,type:'各停'},{h:6,m:51,type:'各停'},
+  {h:7,m:2,type:'各停'},{h:7,m:11,type:'各停'},{h:7,m:20,type:'各停'},
+  {h:7,m:29,type:'各停'},{h:7,m:38,type:'各停'},{h:7,m:47,type:'各停'},
+  {h:7,m:56,type:'各停'},{h:8,m:5,type:'各停'},{h:8,m:14,type:'各停'},
+  {h:8,m:23,type:'各停'},{h:8,m:32,type:'各停'},{h:8,m:41,type:'各停'},
+  {h:8,m:50,type:'各停'},{h:9,m:2,type:'各停'},{h:9,m:14,type:'各停'},
+  {h:9,m:26,type:'各停'},{h:9,m:38,type:'各停'},{h:9,m:50,type:'各停'},
+  {h:10,m:2,type:'各停'},{h:10,m:14,type:'各停'},{h:10,m:26,type:'各停'},
+  {h:10,m:38,type:'各停'},{h:10,m:50,type:'各停'},{h:11,m:2,type:'各停'},
+  {h:11,m:14,type:'各停'},{h:11,m:26,type:'各停'},{h:11,m:38,type:'各停'},
+  {h:11,m:50,type:'各停'},{h:12,m:2,type:'各停'},{h:12,m:14,type:'各停'},
+  {h:12,m:26,type:'各停'},{h:12,m:38,type:'各停'},{h:12,m:50,type:'各停'},
+  {h:13,m:2,type:'各停'},{h:13,m:14,type:'各停'},{h:13,m:26,type:'各停'},
+  {h:13,m:38,type:'各停'},{h:13,m:50,type:'各停'},{h:14,m:2,type:'各停'},
+  {h:14,m:14,type:'各停'},{h:14,m:26,type:'各停'},{h:14,m:38,type:'各停'},
+  {h:14,m:50,type:'各停'},{h:15,m:2,type:'各停'},{h:15,m:14,type:'各停'},
+  {h:15,m:26,type:'各停'},{h:15,m:38,type:'各停'},{h:15,m:50,type:'各停'},
+  {h:16,m:2,type:'各停'},{h:16,m:14,type:'各停'},{h:16,m:26,type:'各停'},
+  {h:16,m:38,type:'各停'},{h:16,m:50,type:'各停'},{h:17,m:2,type:'各停'},
+  {h:17,m:11,type:'各停'},{h:17,m:20,type:'各停'},{h:17,m:29,type:'各停'},
+  {h:17,m:38,type:'各停'},{h:17,m:47,type:'各停'},{h:17,m:56,type:'各停'},
+  {h:18,m:5,type:'各停'},{h:18,m:14,type:'各停'},{h:18,m:23,type:'各停'},
+  {h:18,m:32,type:'各停'},{h:18,m:41,type:'各停'},{h:18,m:50,type:'各停'},
+  {h:19,m:2,type:'各停'},{h:19,m:14,type:'各停'},{h:19,m:26,type:'各停'},
+  {h:19,m:38,type:'各停'},{h:19,m:50,type:'各停'},{h:20,m:2,type:'各停'},
+  {h:20,m:17,type:'各停'},{h:20,m:32,type:'各停'},{h:20,m:47,type:'各停'},
+  {h:21,m:2,type:'各停'},{h:21,m:17,type:'各停'},{h:21,m:32,type:'各停'},
+  {h:21,m:47,type:'各停'},{h:22,m:2,type:'各停'},{h:22,m:20,type:'各停'},
+  {h:22,m:38,type:'各停'},{h:22,m:56,type:'各停'},{h:23,m:14,type:'各停'},
+  {h:23,m:35,type:'各停'},{h:23,m:58,type:'各停'},{h:0,m:20,type:'各停'},
+];
+
+// 土休日
+const KOMAE_ARR_HOLIDAY = [
+  {h:5,m:47,type:'各停'},{h:6,m:7,type:'各停'},{h:6,m:30,type:'各停'},
+  {h:6,m:50,type:'各停'},{h:7,m:10,type:'各停'},{h:7,m:30,type:'各停'},
+  {h:7,m:50,type:'各停'},{h:8,m:10,type:'各停'},{h:8,m:30,type:'各停'},
+  {h:8,m:50,type:'各停'},{h:9,m:10,type:'各停'},{h:9,m:30,type:'各停'},
+  {h:9,m:50,type:'各停'},{h:10,m:10,type:'各停'},{h:10,m:30,type:'各停'},
+  {h:10,m:50,type:'各停'},{h:11,m:10,type:'各停'},{h:11,m:30,type:'各停'},
+  {h:11,m:50,type:'各停'},{h:12,m:10,type:'各停'},{h:12,m:30,type:'各停'},
+  {h:12,m:50,type:'各停'},{h:13,m:10,type:'各停'},{h:13,m:30,type:'各停'},
+  {h:13,m:50,type:'各停'},{h:14,m:10,type:'各停'},{h:14,m:30,type:'各停'},
+  {h:14,m:50,type:'各停'},{h:15,m:10,type:'各停'},{h:15,m:30,type:'各停'},
+  {h:15,m:50,type:'各停'},{h:16,m:10,type:'各停'},{h:16,m:30,type:'各停'},
+  {h:16,m:50,type:'各停'},{h:17,m:10,type:'各停'},{h:17,m:30,type:'各停'},
+  {h:17,m:50,type:'各停'},{h:18,m:10,type:'各停'},{h:18,m:30,type:'各停'},
+  {h:18,m:50,type:'各停'},{h:19,m:10,type:'各停'},{h:19,m:30,type:'各停'},
+  {h:19,m:50,type:'各停'},{h:20,m:10,type:'各停'},{h:20,m:30,type:'各停'},
+  {h:20,m:50,type:'各停'},{h:21,m:10,type:'各停'},{h:21,m:35,type:'各停'},
+  {h:22,m:0,type:'各停'},{h:22,m:25,type:'各停'},{h:22,m:50,type:'各停'},
+  {h:23,m:18,type:'各停'},{h:23,m:45,type:'各停'},{h:0,m:20,type:'各停'},
+];
+
+// 各駅から狛江駅までの所要時間（分）
+// 小田急線 各停で狛江駅まで
+const STATION_TO_KOMAE_MIN = {
+  '新宿':    45,
+  '南新宿':  43,
+  '参宮橋':  41,
+  '代々木八幡': 39,
+  '代々木上原': 37,
+  '東北沢':  35,
+  '下北沢':  33,
+  '世田谷代田': 31,
+  '梅ヶ丘':  29,
+  '豪徳寺':  27,
+  '経堂':    24,
+  '千歳船橋': 21,
+  '祖師ヶ谷大蔵': 18,
+  '成城学園前': 14,
+  '喜多見':   8,
+  '狛江':     0,
 };
+
+// 各駅の座標
+const STATIONS = [
+  {name:'新宿',    lat:35.6896, lng:139.7006, toKomae:45},
+  {name:'南新宿',  lat:35.6847, lng:139.7000, toKomae:43},
+  {name:'参宮橋',  lat:35.6791, lng:139.6965, toKomae:41},
+  {name:'代々木八幡',lat:35.6720,lng:139.6941, toKomae:39},
+  {name:'代々木上原',lat:35.6645,lng:139.6857, toKomae:37},
+  {name:'東北沢',  lat:35.6604, lng:139.6817, toKomae:35},
+  {name:'下北沢',  lat:35.6613, lng:139.6678, toKomae:33},
+  {name:'世田谷代田',lat:35.6585,lng:139.6554, toKomae:31},
+  {name:'梅ヶ丘',  lat:35.6568, lng:139.6452, toKomae:29},
+  {name:'豪徳寺',  lat:35.6544, lng:139.6360, toKomae:27},
+  {name:'経堂',    lat:35.6510, lng:139.6257, toKomae:24},
+  {name:'千歳船橋',lat:35.6450, lng:139.6147, toKomae:21},
+  {name:'祖師ヶ谷大蔵',lat:35.6380,lng:139.6033,toKomae:18},
+  {name:'成城学園前',lat:35.6332,lng:139.5918, toKomae:14},
+  {name:'喜多見',  lat:35.6274, lng:139.5759, toKomae:8},
+  {name:'狛江',    lat:35.6219, lng:139.5655, toKomae:0},
+];
 
 // ============================================================
 // State
 // ============================================================
-let state = {
-  lat: null, lng: null,
-  locationName: '取得中...',
-  nearestStation: '新宿',
-  stationLat: 35.6896, stationLng: 139.7006,
-  distanceM: 0,
-  walkMinutes: 0,
-  walkSeconds: 0,
-  currentTrain: null,
-  nextTrain: null,
-  countdownSec: 0,
-  timerInterval: null,
-  trainIndex: 0
+let S = {
+  lat:null, lng:null, locName:'取得中...', station:null,
+  distM:0, walkMin:0, walkSec:0,
+  trainIdx:0, countSec:0, interval:null
 };
 
-// 主要な乗り換え駅データ（新宿を基準にした最寄り駅候補）
-const STATIONS = [
-  {name:'新宿', lat:35.6896, lng:139.7006},
-  {name:'南新宿', lat:35.6847, lng:139.7000},
-  {name:'参宮橋', lat:35.6791, lng:139.6965},
-  {name:'代々木八幡', lat:35.6720, lng:139.6941},
-  {name:'代々木上原', lat:35.6645, lng:139.6857},
-  {name:'東北沢', lat:35.6604, lng:139.6817},
-  {name:'下北沢', lat:35.6613, lng:139.6678},
-  {name:'世田谷代田', lat:35.6585, lng:139.6554},
-  {name:'梅ヶ丘', lat:35.6568, lng:139.6452},
-  {name:'豪徳寺', lat:35.6544, lng:139.6360},
-  {name:'経堂', lat:35.6510, lng:139.6257},
-  {name:'千歳船橋', lat:35.6450, lng:139.6147},
-  {name:'祖師ヶ谷大蔵', lat:35.6380, lng:139.6033},
-  {name:'成城学園前', lat:35.6332, lng:139.5918},
-  {name:'喜多見', lat:35.6274, lng:139.5759},
-  {name:'狛江', lat:35.6219, lng:139.5655},
-];
+function isHoliday() { const d=new Date().getDay(); return d===0||d===6; }
+function timetable()  { return isHoliday() ? KOMAE_ARR_HOLIDAY : KOMAE_ARR_WEEKDAY; }
+
+function pad(n){ return String(n).padStart(2,'0'); }
+function fmt(h,m){ return `${pad(h)}:${pad(m)}`; }
+function addMin(str,add){
+  const [h,m]=str.split(':').map(Number);
+  const t=h*60+m+add; return `${pad(Math.floor(t/60)%24)}:${pad(t%60)}`;
+}
+function toSec(h,m){ return h*3600+m*60; }
+function nowSec(){ const n=new Date(); return n.getHours()*3600+n.getMinutes()*60+n.getSeconds(); }
 
 // ============================================================
-// Geo & Location
+// GPS & Geocode
 // ============================================================
-function init() {
-  showOverlay('現在地を取得中…\n位置情報の許可をお願いします', true);
-  document.getElementById('retryBtn').style.display = 'none';
-
-  if (!navigator.geolocation) {
-    showError('このブラウザは位置情報に\n対応していません');
-    return;
-  }
-
+function init(){
+  show('現在地を取得中…\n位置情報の許可をお願いします', true);
+  document.getElementById('retryBtn').style.display='none';
+  if(!navigator.geolocation){ showErr('位置情報が使えません'); return; }
   navigator.geolocation.getCurrentPosition(
-    onGeoSuccess,
-    onGeoError,
-    { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
+    pos=>{ S.lat=pos.coords.latitude; S.lng=pos.coords.longitude;
+           show('場所を特定中...', true); geocode(); },
+    ()=>{ S.lat=35.6510; S.lng=139.6257; S.locName='経堂周辺（GPS失敗）'; compute(); },
+    {enableHighAccuracy:true, timeout:12000, maximumAge:60000}
   );
 }
 
-function onGeoSuccess(pos) {
-  state.lat = pos.coords.latitude;
-  state.lng = pos.coords.longitude;
-
-  showOverlay('場所を特定中...', true);
-  reverseGeocode(state.lat, state.lng);
-}
-
-function onGeoError(err) {
-  // GPS失敗時は新宿をデフォルトにして続行
-  state.lat = 35.6896;
-  state.lng = 139.7006;
-  state.locationName = '新宿区（デフォルト）';
-  computeAndStart();
-}
-
-async function reverseGeocode(lat, lng) {
+async function geocode(){
   try {
-    // 国土地理院の逆ジオコーディングAPI（無料・API Key不要）
-    const url = `https://mreversegeocoder.gsi.go.jp/reverse-geocoder/LonLatToAddress?lon=${lng}&lat=${lat}`;
-    const res = await fetch(url);
-    const data = await res.json();
-    if (data && data.results) {
-      const r = data.results;
-      state.locationName = (r.muniCd ? '' : '') + (r.lv01Nm || '') ;
-      // 市区町村名を抽出
-      const muniName = r.lv01Nm || '';
-      state.locationName = muniName || '現在地';
+    const r = await fetch(
+      `https://mreversegeocoder.gsi.go.jp/reverse-geocoder/LonLatToAddress?lon=${S.lng}&lat=${S.lat}`
+    );
+    const d = await r.json();
+    S.locName = d?.results?.lv01Nm || '現在地';
+  } catch(e){ S.locName='現在地'; }
+  compute();
+}
+
+// ============================================================
+// 最寄り駅を探す
+// ============================================================
+function findNearest(){
+  let min=Infinity, best=STATIONS[0];
+  for(const st of STATIONS){
+    const d=dist(S.lat,S.lng,st.lat,st.lng);
+    if(d<min){ min=d; best=st; }
+  }
+  return {st:best, distM:Math.round(min)};
+}
+
+function dist(la1,lo1,la2,lo2){
+  const R=6371000, dLa=(la2-la1)*Math.PI/180, dLo=(lo2-lo1)*Math.PI/180;
+  const a=Math.sin(dLa/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLo/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+// ============================================================
+// 次の電車を探す
+// 「最寄り駅の出発時刻」= 狛江着時刻 - 最寄り駅から狛江までの所要時間
+// カウントダウン = 最寄り駅出発時刻 - 現在時刻 - 徒歩時間
+// ============================================================
+function findTrain(walkTotalSec, startIdx){
+  const tbl = timetable();
+  const ns = nowSec();
+  // 最低でも「今から徒歩時間+1分」後に出発する電車を探す
+  const neededDepSec = ns + walkTotalSec + 60;
+
+  for(let i=startIdx; i<tbl.length+startIdx; i++){
+    const idx = i % tbl.length;
+    const t = tbl[idx];
+    // 狛江着 → 最寄り駅発 = 狛江着 - toKomae分
+    let depSec = toSec(t.h, t.m) - S.station.toKomae * 60;
+    // 日付をまたぐ補正
+    if(depSec < 0) depSec += 86400;
+    if(depSec >= neededDepSec){
+      return {idx, train:t, depSec};
     }
-  } catch(e) {
-    state.locationName = '現在地';
   }
-  computeAndStart();
+  // 見つからなければ最初の電車
+  const t = tbl[0];
+  let depSec = toSec(t.h,t.m) - S.station.toKomae*60 + 86400;
+  return {idx:0, train:t, depSec};
 }
 
 // ============================================================
-// Station & Walk
+// 計算・開始
 // ============================================================
-function findNearestStation(lat, lng) {
-  let minDist = Infinity, nearest = STATIONS[0];
-  for (const st of STATIONS) {
-    const d = calcDistance(lat, lng, st.lat, st.lng);
-    if (d < minDist) { minDist = d; nearest = st; }
-  }
-  return { station: nearest, distanceM: Math.round(minDist) };
+function compute(){
+  const {st, distM} = findNearest();
+  S.station = st; S.distM = distM;
+  const walkTotalSec = Math.ceil(distM / 60 * 60); // 60m/分
+  S.walkMin = Math.floor(walkTotalSec/60);
+  S.walkSec = walkTotalSec % 60;
+
+  const {idx, train, depSec} = findTrain(walkTotalSec, 0);
+  S.trainIdx = idx;
+
+  // カウントダウン = 最寄り駅出発時刻 - 現在時刻 - 徒歩時間
+  S.countSec = Math.max(0, depSec - nowSec() - walkTotalSec);
+
+  updateUI(train);
+  hide();
+  if(S.interval) clearInterval(S.interval);
+  S.interval = setInterval(()=>tick(walkTotalSec), 1000);
 }
 
-function calcDistance(lat1, lng1, lat2, lng2) {
-  const R = 6371000;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLng = (lng2 - lng1) * Math.PI / 180;
-  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-}
-
-// ============================================================
-// Timetable
-// ============================================================
-function isHoliday() {
-  const d = new Date();
-  const day = d.getDay();
-  return day === 0 || day === 6;
-}
-
-function getTimetable() {
-  return isHoliday() ? TIMETABLE.holiday : TIMETABLE.weekday;
-}
-
-function toMinutes(h, m) { return h * 60 + m; }
-
-function findNextTrain(afterMinutes) {
-  const table = getTimetable();
-  const now = afterMinutes;
-  // 現在時刻以降の電車を探す
-  for (let i = 0; i < table.length; i++) {
-    const t = table[i];
-    const tMin = toMinutes(t.h, t.m);
-    if (tMin >= now) return { train: t, index: i };
-  }
-  // 翌日最初の電車
-  return { train: table[0], index: 0 };
-}
-
-function findTrainAfterIndex(index) {
-  const table = getTimetable();
-  const next = (index + 1) % table.length;
-  return { train: table[next], index: next };
-}
-
-function fmtTime(h, m) {
-  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
-}
-
-function addMinutes(timeStr, addMin) {
-  const [h, m] = timeStr.split(':').map(Number);
-  const total = h * 60 + m + addMin;
-  const nh = Math.floor(total / 60) % 24;
-  const nm = total % 60;
-  return `${String(nh).padStart(2,'0')}:${String(nm).padStart(2,'0')}`;
-}
-
-// ============================================================
-// Core compute
-// ============================================================
-function computeAndStart() {
-  const now = new Date();
-  const nowMin = now.getHours() * 60 + now.getMinutes();
-  const nowSec = now.getSeconds();
-  const nowTotalSec = nowMin * 60 + nowSec;
-
-  // 最寄り駅
-  const { station, distanceM } = findNearestStation(state.lat, state.lng);
-  state.nearestStation = station.name;
-  state.stationLat = station.lat;
-  state.stationLng = station.lng;
-  state.distanceM = distanceM;
-
-  // 徒歩時間（60m/分）
-  const walkTotalSec = Math.ceil((distanceM / 60) * 60);
-  state.walkMinutes = Math.floor(walkTotalSec / 60);
-  state.walkSeconds = walkTotalSec % 60;
-
-  // 現在地が狛江駅より向こうの場合は新宿から乗る想定
-  // 次の電車を探す（徒歩時間を考慮して間に合う電車）
-  const { train, index } = findNextTrain(nowMin);
-  state.currentTrain = train;
-  state.trainIndex = index;
-
-  // カウントダウン = (電車出発 - 現在時刻) - 徒歩時間
-  const trainTotalSec = (train.h * 3600 + train.m * 60);
-  let remainSec = trainTotalSec - nowTotalSec - walkTotalSec;
-
-  // 残り時間がマイナスまたは5分未満なら次の電車へ
-  if (remainSec < 300) {
-    const { train: nextT, index: nextI } = findTrainAfterIndex(index);
-    state.currentTrain = nextT;
-    state.trainIndex = nextI;
-    const nextTrainSec = (nextT.h * 3600 + nextT.m * 60);
-    remainSec = nextTrainSec - nowTotalSec - walkTotalSec;
-  }
-
-  state.countdownSec = Math.max(0, remainSec);
-
-  // 次の電車も取得
-  const { train: nextTrain } = findTrainAfterIndex(state.trainIndex);
-  state.nextTrain = nextTrain;
-
-  updateUI();
-  hideOverlay();
-  startCountdown();
-}
-
-// ============================================================
-// Countdown
-// ============================================================
-function startCountdown() {
-  if (state.timerInterval) clearInterval(state.timerInterval);
-  state.timerInterval = setInterval(tick, 1000);
-}
-
-function tick() {
-  state.countdownSec--;
-
-  if (state.countdownSec <= 300 && state.countdownSec > 299) {
-    // 5分切ったら次の電車へ
-    switchToNextTrain();
+function tick(walkTotalSec){
+  S.countSec--;
+  // 5分（300秒）を切ったら次の電車へ
+  if(S.countSec <= 300){
+    const {idx, train, depSec} = findTrain(walkTotalSec, (S.trainIdx+1));
+    S.trainIdx = idx;
+    S.countSec = Math.max(0, depSec - nowSec() - walkTotalSec);
+    updateUI(train);
+    notify(`⏭ 次の電車 ${fmtTrain(train)} に切り替えました`);
     return;
   }
-
-  if (state.countdownSec < 0) {
-    switchToNextTrain();
-    return;
-  }
-
-  updateCountdownDisplay();
+  updateCD();
 }
 
-function switchToNextTrain() {
-  const { train, index } = findTrainAfterIndex(state.trainIndex);
-  state.currentTrain = train;
-  state.trainIndex = index;
-
-  const now = new Date();
-  const nowTotalSec = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
-  const walkTotalSec = state.walkMinutes * 60 + state.walkSeconds;
-  const trainSec = train.h * 3600 + train.m * 60;
-  state.countdownSec = Math.max(0, trainSec - nowTotalSec - walkTotalSec);
-
-  const { train: nextTrain } = findTrainAfterIndex(state.trainIndex);
-  state.nextTrain = nextTrain;
-
-  showNextTrainNotice();
-  updateUI();
+function fmtTrain(t){
+  const tbl = timetable();
+  // 最寄り駅発時刻を計算
+  let depMin = t.h*60+t.m - S.station.toKomae;
+  if(depMin<0) depMin+=1440;
+  return fmt(Math.floor(depMin/60), depMin%60);
 }
 
 // ============================================================
-// UI Updates
+// UI
 // ============================================================
-function updateUI() {
-  const t = state.currentTrain;
+function updateUI(train){
+  // 最寄り駅の発車時刻
+  let depTotalMin = train.h*60+train.m - S.station.toKomae;
+  if(depTotalMin<0) depTotalMin+=1440;
+  const depH=Math.floor(depTotalMin/60), depM=depTotalMin%60;
 
-  document.getElementById('currentLocation').textContent = state.locationName;
-  document.getElementById('nearestStation').textContent = state.nearestStation + '駅';
+  document.getElementById('curLoc').textContent   = S.locName;
+  document.getElementById('nearSt').textContent   = S.station.name+'駅';
+  document.getElementById('walkT').textContent    = S.walkSec>0 ? `${S.walkMin}分${S.walkSec}秒` : `${S.walkMin}分`;
+  document.getElementById('depStation').textContent = S.station.name;
+  document.getElementById('depTime').textContent  = fmt(depH,depM);
+  document.getElementById('trainType').textContent= train.type;
+  document.getElementById('nextT').textContent    = fmt(depH,depM);
+  document.getElementById('komaeArr').textContent = fmt(train.h,train.m);
+  document.getElementById('routeNote').textContent= `小田急線 ${train.type}`;
 
-  const wm = state.walkMinutes;
-  const ws = state.walkSeconds;
-  document.getElementById('walkTime').textContent =
-    ws > 0 ? `${wm}分${ws}秒` : `${wm}分`;
+  const homeArr = addMin(fmt(train.h,train.m), 10);
+  document.getElementById('homeArr').textContent  = homeArr;
 
-  document.getElementById('depStation').textContent = state.nearestStation;
-  document.getElementById('depTime').textContent = fmtTime(t.h, t.m);
-  document.getElementById('trainType').textContent = t.type;
-
-  document.getElementById('nextTrainTime').textContent = fmtTime(t.h, t.m);
-  document.getElementById('komaeArrival').textContent = t.komaeArr;
-  document.getElementById('routeInfo').textContent = t.via;
-  document.getElementById('homeArrival').textContent = addMinutes(t.komaeArr, 10);
-
-  updateCountdownDisplay();
+  updateCD();
 }
 
-function updateCountdownDisplay() {
-  const s = state.countdownSec;
-  const m = Math.floor(s / 60);
-  const sec = s % 60;
-  const display = `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+function updateCD(){
+  const s=S.countSec;
+  const m=Math.floor(s/60), sec=s%60;
+  document.getElementById('cdTime').textContent = `${pad(m)}:${pad(sec)}`;
 
-  document.getElementById('countdownDisplay').textContent = display;
+  let color = s>600 ? '#22c55e' : s>300 ? '#eab308' : s>120 ? '#f97316' : '#ef4444';
+  document.getElementById('cdTime').style.color = color;
+  document.getElementById('cdTime').classList.toggle('urgent', s<=120);
 
-  // Color logic
-  let color;
-  if (s > 600) color = '#22c55e';       // green: 10分以上
-  else if (s > 300) color = '#eab308';  // yellow: 5-10分
-  else if (s > 120) color = '#f97316';  // orange: 2-5分
-  else color = '#ef4444';                // red: 2分以下
-
-  const el = document.getElementById('countdownDisplay');
-  el.style.color = color;
-  el.classList.toggle('urgent', s <= 120);
-
-  // Ring progress
-  const total = state.currentTrain ?
-    Math.max(state.countdownSec, 1) : 1;
-  const maxSec = 30 * 60; // 最大30分で満タン
-  const ratio = Math.min(s / maxSec, 1);
-  const circumference = 628;
-  const offset = circumference * (1 - ratio);
-  const ring = document.getElementById('ringProgress');
-  ring.style.strokeDashoffset = offset;
+  const maxSec=25*60, ratio=Math.min(s/maxSec,1);
+  const ring=document.getElementById('ringFg');
+  ring.style.strokeDashoffset = 603*(1-ratio);
   ring.style.stroke = color;
 
-  // Sub text
-  const sub = s <= 0 ? '出発時刻です！' :
-    s <= 120 ? '急いで！' :
-    s <= 300 ? 'そろそろ準備を' :
-    '余裕あり';
-  document.getElementById('countdownSub').textContent = sub;
+  document.getElementById('cdSub').textContent =
+    s<=0?'出発時刻です！': s<=120?'急いで！': s<=300?'そろそろ準備を': '余裕あり';
 }
 
-function showNextTrainNotice() {
-  const el = document.getElementById('nextTrainNotice');
-  el.textContent = `⏭ 次の電車 ${fmtTime(state.currentTrain.h, state.currentTrain.m)} に切り替えました`;
-  el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 3000);
-}
-
-// ============================================================
-// Map
-// ============================================================
-function openMap(e) {
+function openMap(e){
   e.preventDefault();
-  const dest = '35.6219,139.5655'; // 狛江駅
-  const url = `https://yahoo-map.app.link/map?from=${state.lat},${state.lng}&to=${dest}`;
-  // Yahoo Mapが開けない場合はGoogle Mapsにフォールバック
-  const googleUrl = `https://www.google.com/maps/dir/?api=1&origin=${state.lat},${state.lng}&destination=35.6219,139.5655&travelmode=walking`;
-  window.open(googleUrl, '_blank');
+  const url=`https://www.google.com/maps/dir/?api=1&origin=${S.lat},${S.lng}&destination=35.6219,139.5655&travelmode=walking`;
+  window.open(url,'_blank');
 }
 
-// ============================================================
-// Overlay
-// ============================================================
-function showOverlay(msg, spin) {
+function notify(msg){
+  const el=document.getElementById('notice');
+  el.textContent=msg; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),3500);
+}
+function show(msg,spin){
   document.getElementById('overlay').classList.remove('hidden');
-  document.getElementById('overlayText').textContent = msg;
-  document.getElementById('spinner').style.display = spin ? 'block' : 'none';
-  document.getElementById('overlayIcon').style.display = spin ? 'none' : 'block';
+  document.getElementById('ovText').textContent=msg;
+  document.getElementById('spin').style.display=spin?'block':'none';
 }
-function hideOverlay() {
-  document.getElementById('overlay').classList.add('hidden');
-}
-function showError(msg) {
-  document.getElementById('spinner').style.display = 'none';
-  document.getElementById('overlayIcon').style.display = 'block';
-  document.getElementById('overlayIcon').textContent = '⚠️';
-  document.getElementById('overlayText').textContent = msg;
-  document.getElementById('retryBtn').style.display = 'block';
+function hide(){ document.getElementById('overlay').classList.add('hidden'); }
+function showErr(msg){
+  document.getElementById('spin').style.display='none';
+  document.getElementById('ovText').textContent=msg;
+  document.getElementById('retryBtn').style.display='block';
 }
 
-// ============================================================
-// Service Worker registration
-// ============================================================
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
-}
-
-// Start
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 window.addEventListener('load', init);
 </script>
 </body>

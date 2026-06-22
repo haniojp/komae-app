@@ -616,4 +616,43 @@ function updateCD(){
   document.getElementById('cdTime').style.color = color;
   document.getElementById('cdTime').classList.toggle('urgent', s <= 120);
   
-  const maxSec =
+  const maxSec = 60 * 60;
+  const ratio = Math.min(s / maxSec, 1);
+  const ring = document.getElementById('ringFg');
+  ring.style.strokeDashoffset = 603 * (1 - ratio);
+  ring.style.stroke = color;
+  
+  document.getElementById('cdSub').textContent =
+    s <= 0 ? '出発時刻です！' : s <= 120 ? '急いで！' : s <= 300 ? 'もうすぐ出発' :
+    s <= 900 ? 'そろそろ準備を' : '余裕あり';
+}
+
+function openMap(e){
+  e.preventDefault();
+  const url=`https://www.google.com/maps/dir/?api=1`
+    +`&origin=${S.lat},${S.lng}`
+    +`&destination=35.62142,139.56494`
+    +`&travelmode=transit`;
+  window.open(url,'_blank');
+}
+function notify(msg){
+  const el=document.getElementById('notice');
+  el.textContent=msg; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),4000);
+}
+function show(msg,spin){
+  document.getElementById('overlay').classList.remove('hidden');
+  document.getElementById('ovText').textContent=msg;
+  document.getElementById('spin').style.display=spin?'block':'none';
+}
+function hide(){ document.getElementById('overlay').classList.add('hidden'); }
+function showErr(msg){
+  document.getElementById('spin').style.display='none';
+  document.getElementById('ovText').textContent=msg;
+  document.getElementById('retryBtn').style.display='block';
+}
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+window.addEventListener('load',init);
+</script>
+</body>
+</html>

@@ -478,7 +478,6 @@ function findNearest(){
     const d=dist(S.lat,S.lng,st.lat,st.lng);
     if(d<min){ min=d; best=st; }
   }
-  // 同名駅が複数ある場合は距離最小のものを採用済み
   return {st:best, distM:Math.round(min)};
 }
 
@@ -489,108 +488,119 @@ function dist(la1,lo1,la2,lo2){
 }
 
 // ============================================================
-// 次の小田急電車を探す
-// 「新宿発→狛江着」の狛江到着時刻テーブルから、
-//  現在地から新宿までの所要時間＋徒歩時間を引いて
-//  間に合う電車を検索
+// 次の電車を探す
+// 小田急線と他路線で所要時間の計算を分岐させる
 // ============================================================
-function findTrain(walkSec, toShinjukuSec, startIdx){
-  const tbl=timetable();
-  const ns=nowSec();
-  // 新宿に到着できる最短時刻（秒）
-  const arrShinjukuSec = ns + walkSec + toShinjukuSec;
+function findTrain(walkSec, st, startIdx) {
+  const tbl = timetable();
+  const ns = nowSec();
+  
+  // 1. 最寄り駅から狛江駅までの電車所要時間(秒)を算出
+  const isOdakyu = st.line === '小田急線';
+  let transitSec = 0;
+  if (isOdakyu) {
+    // 小田急線の場合は直行（新宿〜狛江の29分から、新宿〜最寄り駅の時間を引く）
+    transitSec = (29 * 60) - (st.toShinjuku * 60);
+  } else {
+    // 他路線の場合は新宿経由（最寄り駅〜新宿 ＋ 新宿〜狛江の29分）
+    transitSec = (st.toShinjuku * 60) + (29 * 60);
+  }
 
-  for(let i=startIdx; i<tbl.length+startIdx; i++){
-    const idx=i%tbl.length;
-    const t=tbl[idx];
-    // 狛江着時刻を秒に変換
-    let komaeArrSec = t.h*3600+t.m*60;
-    if(komaeArrSec < ns) komaeArrSec += 86400; // 日付またぎ補正
-    // 新宿発時刻 = 狛江着 - 29分
-    const shinjukuDepSec = komaeArrSec - 29*60;
-    // 新宿到着 < 新宿出発 なら乗れる（1分の余裕を追加）
-    if(shinjukuDepSec >= arrShinjukuSec + 60){
-      return {idx, train:t, komaeArrSec, shinjukuDepSec};
+  for(let i=startIdx; i<tbl.length+startIdx; i++) {
+    const idx = i % tbl.length;
+    const t = tbl[idx];
+    
+    // 狛江着時刻を秒に変換（日またぎ考慮）
+    let komaeArrSec = t.h * 3600 + t.m * 60;
+    if(komaeArrSec < ns) komaeArrSec += 86400; 
+
+    // 最寄り駅の出発時刻を逆算
+    const depSec = komaeArrSec - transitSec;
+
+    // 「現在時刻 + 徒歩時間 + 1分(猶予)」が出発時刻より前なら間に合う
+    if(depSec >= ns + walkSec + 60) {
+      return {idx, train:t, komaeArrSec, depSec};
     }
   }
-  // 翌日最初
-  const t=tbl[0];
-  return {idx:0, train:t,
-    komaeArrSec:t.h*3600+t.m*60+86400,
-    shinjukuDepSec:t.h*3600+t.m*60+86400-29*60};
+  
+  // 翌日の始発（簡易フォールバック）
+  const t = tbl[0];
+  const komaeArrSec = t.h * 3600 + t.m * 60 + 86400;
+  const depSec = komaeArrSec - transitSec;
+  return {idx:0, train:t, komaeArrSec, depSec};
 }
 
 // ============================================================
 // 計算・開始
 // ============================================================
 function compute(){
-  const{st,distM}=findNearest();
-  S.nearestSt=st; S.distM=distM;
-  const walkTotalSec=Math.ceil(distM/60*60); // 60m/分
-  S.walkMin=Math.floor(walkTotalSec/60);
-  S.walkSec=walkTotalSec%60;
+  const {st, distM} = findNearest();
+  S.nearestSt = st; 
+  S.distM = distM;
+  
+  // 徒歩時間を分速80mで計算するように修正
+  const walkTotalSec = Math.ceil((distM / 80) * 60); 
+  S.walkMin = Math.floor(walkTotalSec / 60);
+  S.walkSec = walkTotalSec % 60;
 
-  const toShinjukuSec=st.toShinjuku*60;
-  const{idx,train,komaeArrSec,shinjukuDepSec}=findTrain(walkTotalSec,toShinjukuSec,0);
-  S.trainIdx=idx;
+  const {idx, train, komaeArrSec, depSec} = findTrain(walkTotalSec, st, 0);
+  S.trainIdx = idx;
 
-  // カウントダウン = 最寄り駅の電車出発時刻 - 現在時刻 - 徒歩時間
-  // 最寄り駅出発時刻 = 新宿出発 - 新宿までの所要時間
-  const nearestDepSec = shinjukuDepSec - toShinjukuSec;
-  S.countSec = Math.max(0, nearestDepSec - nowSec() - walkTotalSec);
+  // カウントダウン = 最寄り駅の出発時刻 - 現在時刻 - 徒歩時間
+  S.countSec = Math.max(0, depSec - nowSec() - walkTotalSec);
 
-  updateUI(train,komaeArrSec,shinjukuDepSec,nearestDepSec,walkTotalSec,toShinjukuSec);
+  updateUI(train, komaeArrSec, depSec, walkTotalSec, st);
   hide();
   if(S.interval) clearInterval(S.interval);
-  S.interval=setInterval(()=>tick(walkTotalSec,toShinjukuSec),1000);
+  S.interval = setInterval(() => tick(walkTotalSec, st), 1000);
 }
 
-function tick(walkSec,toShinjukuSec){
+function tick(walkSec, st){
   S.countSec--;
-  if(S.countSec<=0){
-    const{idx,train,komaeArrSec,shinjukuDepSec}=findTrain(walkSec,toShinjukuSec,S.trainIdx+1);
-    S.trainIdx=idx;
-    const nearestDepSec = shinjukuDepSec - toShinjukuSec;
-    S.countSec=Math.max(0, nearestDepSec - nowSec() - walkSec);
-    updateUI(train,komaeArrSec,shinjukuDepSec,nearestDepSec,walkSec,toShinjukuSec);
-    notify(`⏭ 次の電車に切り替えました（狛江着 ${fmt(train.h,train.m)}）`);
+  if(S.countSec <= 0){
+    const {idx, train, komaeArrSec, depSec} = findTrain(walkSec, st, S.trainIdx + 1);
+    S.trainIdx = idx;
+    S.countSec = Math.max(0, depSec - nowSec() - walkSec);
+    updateUI(train, komaeArrSec, depSec, walkSec, st);
+    notify(`⏭ 次の電車に切り替えました（狛江着 ${fmt(train.h, train.m)}）`);
     return;
   }
   updateCD();
 }
 
 // ============================================================
-// UI
+// UI更新
 // ============================================================
-function updateUI(train,komaeArrSec,shinjukuDepSec,nearestDepSec,walkSec,toShinjukuSec){
-  const st=S.nearestSt;
-  // 最寄り駅の出発時刻 = 新宿出発 - 新宿までの所要時間
-  const depSec=shinjukuDepSec - toShinjukuSec;
-  const depH=Math.floor(depSec/3600)%24;
-  const depM=Math.floor(depSec%3600/60);
-  // 新宿発時刻
-  const snjH=Math.floor(shinjukuDepSec/3600)%24;
-  const snjM=Math.floor(shinjukuDepSec%3600/60);
+function updateUI(train, komaeArrSec, depSec, walkSec, st){
+  const depH = Math.floor(depSec / 3600) % 24;
+  const depM = Math.floor(depSec % 3600 / 60);
 
-  // 乗車駅の表示：小田急線の場合は最寄り駅、それ以外は新宿
-  const isOdakyu=st.line==='小田急線';
-  const boardSt=isOdakyu?st.name:'新宿';
-  const boardTime=isOdakyu?fmt(depH,depM):fmt(snjH,snjM);
-  const routeNote=isOdakyu
-    ?`小田急線 ${train.type}`
-    :`${st.line} → 新宿 → 小田急線 ${train.type}`;
+  // 新宿発時刻の計算（UIの「小田急 出発」表示用）
+  const shinjukuDepSec = komaeArrSec - 29 * 60;
+  const snjH = Math.floor(shinjukuDepSec / 3600) % 24;
+  const snjM = Math.floor(shinjukuDepSec % 3600 / 60);
 
-  document.getElementById('curLoc').textContent=S.locName;
-  document.getElementById('nearSt').textContent=st.name+'駅';
-  document.getElementById('walkT').textContent=
-    S.walkSec>0?`${S.walkMin}分${S.walkSec}秒`:`${S.walkMin}分`;
-  document.getElementById('depStation').textContent=boardSt;
-  document.getElementById('depTime').textContent=boardTime;
-  document.getElementById('trainType').textContent=isOdakyu?train.type:'乗換あり';
-  document.getElementById('nextT').textContent=fmt(snjH,snjM);
-  document.getElementById('komaeArr').textContent=fmt(train.h,train.m);
-  document.getElementById('routeNote').textContent=routeNote;
-  document.getElementById('homeArr').textContent=addMin(fmt(train.h,train.m),10);
+  const isOdakyu = st.line === '小田急線';
+  const boardSt = isOdakyu ? st.name : '新宿';
+  
+  // 小田急線なら最寄り駅出発時刻、そうでないなら新宿出発時刻をヘッダに表示
+  const boardTime = isOdakyu ? fmt(depH, depM) : fmt(snjH, snjM);
+  
+  const routeNote = isOdakyu
+    ? `小田急線 ${train.type}`
+    : `${st.line} → 新宿 → 小田急線 ${train.type}`;
+
+  document.getElementById('curLoc').textContent = S.locName;
+  document.getElementById('nearSt').textContent = st.name + '駅';
+  document.getElementById('walkT').textContent = 
+    S.walkSec > 0 ? `${S.walkMin}分${S.walkSec}秒` : `${S.walkMin}分`;
+  document.getElementById('depStation').textContent = boardSt;
+  document.getElementById('depTime').textContent = boardTime;
+  document.getElementById('trainType').textContent = isOdakyu ? train.type : '乗換あり';
+  document.getElementById('nextT').textContent = fmt(snjH, snjM);
+  document.getElementById('komaeArr').textContent = fmt(train.h, train.m);
+  document.getElementById('routeNote').textContent = routeNote;
+  document.getElementById('homeArr').textContent = addMin(fmt(train.h, train.m), 10);
 
   updateCD();
 }

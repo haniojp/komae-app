@@ -60,7 +60,7 @@ body{display:flex;flex-direction:column;min-height:100vh;min-height:-webkit-fill
 .spinner{width:40px;height:40px;border:3px solid rgba(59,130,246,.2);
   border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.ov-text{font-size:16px;font-weight:500;color:var(--muted);text-align:center;line-height:1.7;word-break:break-all}
+.ov-text{font-size:16px;font-weight:500;color:var(--muted);text-align:center;line-height:1.7}
 .retry-btn{background:none;border:1px solid var(--border);color:var(--muted);
   font-size:13px;padding:8px 20px;border-radius:20px;cursor:pointer;margin-top:4px}
 .notice{position:fixed;top:56px;left:16px;right:16px;background:rgba(234,179,8,.15);
@@ -77,7 +77,7 @@ body{display:flex;flex-direction:column;min-height:100vh;min-height:-webkit-fill
 <div class="overlay" id="overlay">
   <div class="spinner" id="spin"></div>
   <div class="ov-text" id="ovText">現在地を取得中…<br>位置情報の許可をお願いします</div>
-  <button class="retry-btn" id="retryBtn" style="display:none" onclick="location.reload()">再読み込み</button>
+  <button class="retry-btn" id="retryBtn" style="display:none" onclick="init()">再試行する</button>
 </div>
 <div class="notice" id="notice"></div>
 <div class="header">
@@ -147,9 +147,12 @@ body{display:flex;flex-direction:column;min-height:100vh;min-height:-webkit-fill
 
 <script>
 // ============================================================
-// データベース
+// 東京都内 主要駅データベース
+// 各駅から新宿までの所要時間（電車・分）を内蔵
+// 徒歩距離(m)は現在地からGPSで計算
 // ============================================================
 const STATION_DB = [
+  // === 小田急線（新宿起点） ===
   {name:'新宿',      lat:35.68950,lng:139.70050,toShinjuku:0,  line:'小田急線'},
   {name:'南新宿',    lat:35.68383,lng:139.69916,toShinjuku:2,  line:'小田急線'},
   {name:'参宮橋',    lat:35.67874,lng:139.69538,toShinjuku:4,  line:'小田急線'},
@@ -166,6 +169,8 @@ const STATION_DB = [
   {name:'成城学園前',lat:35.63229,lng:139.58997,toShinjuku:25, line:'小田急線'},
   {name:'喜多見',    lat:35.62706,lng:139.57538,toShinjuku:27, line:'小田急線'},
   {name:'狛江',      lat:35.62142,lng:139.56494,toShinjuku:29, line:'小田急線'},
+
+  // === JR山手線 ===
   {name:'渋谷',      lat:35.65910,lng:139.70140,toShinjuku:5,  line:'JR山手線'},
   {name:'原宿',      lat:35.67069,lng:139.70267,toShinjuku:3,  line:'JR山手線'},
   {name:'代々木',    lat:35.68303,lng:139.70220,toShinjuku:2,  line:'JR山手線'},
@@ -195,6 +200,8 @@ const STATION_DB = [
   {name:'巣鴨',      lat:35.73352,lng:139.73953,toShinjuku:28, line:'JR山手線'},
   {name:'大塚',      lat:35.72898,lng:139.72855,toShinjuku:26, line:'JR山手線'},
   {name:'新大塚',    lat:35.72282,lng:139.72944,toShinjuku:25, line:'東京メトロ丸ノ内線'},
+
+  // === JR中央線・総武線 ===
   {name:'中野',      lat:35.70578,lng:139.66389,toShinjuku:6,  line:'JR中央線'},
   {name:'高円寺',    lat:35.70571,lng:139.64967,toShinjuku:8,  line:'JR中央線'},
   {name:'阿佐ヶ谷',  lat:35.70526,lng:139.63632,toShinjuku:10, line:'JR中央線'},
@@ -211,6 +218,8 @@ const STATION_DB = [
   {name:'飯田橋',    lat:35.70206,lng:139.74693,toShinjuku:11, line:'JR中央線'},
   {name:'水道橋',    lat:35.70200,lng:139.75330,toShinjuku:13, line:'JR中央線'},
   {name:'御茶ノ水',  lat:35.69803,lng:139.76431,toShinjuku:15, line:'JR中央線'},
+
+  // === 東京メトロ丸ノ内線 ===
   {name:'荻窪（丸ノ内線）',lat:35.70596,lng:139.62024,toShinjuku:12,line:'東京メトロ丸ノ内線'},
   {name:'南阿佐ヶ谷',lat:35.70427,lng:139.63855,toShinjuku:10,line:'東京メトロ丸ノ内線'},
   {name:'新高円寺',  lat:35.70502,lng:139.65100,toShinjuku:8,  line:'東京メトロ丸ノ内線'},
@@ -227,6 +236,8 @@ const STATION_DB = [
   {name:'霞ケ関',    lat:35.67400,lng:139.74973,toShinjuku:16, line:'東京メトロ丸ノ内線'},
   {name:'銀座',      lat:35.67148,lng:139.76544,toShinjuku:19, line:'東京メトロ丸ノ内線'},
   {name:'東京（丸ノ内線）',lat:35.68124,lng:139.76712,toShinjuku:21,line:'東京メトロ丸ノ内線'},
+
+  // === 東京メトロ副都心線・有楽町線 ===
   {name:'和光市',    lat:35.78504,lng:139.61130,toShinjuku:28, line:'東京メトロ副都心線'},
   {name:'地下鉄成増',lat:35.77460,lng:139.62430,toShinjuku:26, line:'東京メトロ副都心線'},
   {name:'地下鉄赤塚',lat:35.76583,lng:139.63436,toShinjuku:25, line:'東京メトロ副都心線'},
@@ -243,6 +254,8 @@ const STATION_DB = [
   {name:'北参道',    lat:35.67840,lng:139.70750,toShinjuku:4,  line:'東京メトロ副都心線'},
   {name:'明治神宮前',lat:35.66969,lng:139.70267,toShinjuku:6,  line:'東京メトロ副都心線'},
   {name:'渋谷（副都心線）',lat:35.65910,lng:139.70140,toShinjuku:8,line:'東京メトロ副都心線'},
+
+  // === 東京メトロ銀座線 ===
   {name:'表参道',    lat:35.66512,lng:139.71240,toShinjuku:10, line:'東京メトロ銀座線'},
   {name:'外苑前',    lat:35.67291,lng:139.71697,toShinjuku:8,  line:'東京メトロ銀座線'},
   {name:'青山一丁目',lat:35.67241,lng:139.72334,toShinjuku:10, line:'東京メトロ銀座線'},
@@ -258,6 +271,8 @@ const STATION_DB = [
   {name:'稲荷町',    lat:35.71249,lng:139.78350,toShinjuku:29, line:'東京メトロ銀座線'},
   {name:'田原町',    lat:35.71108,lng:139.79000,toShinjuku:31, line:'東京メトロ銀座線'},
   {name:'浅草',      lat:35.71149,lng:139.79703,toShinjuku:32, line:'東京メトロ銀座線'},
+
+  // === 東急東横線・田園都市線 ===
   {name:'中目黒',    lat:35.64426,lng:139.69824,toShinjuku:12, line:'東急東横線'},
   {name:'祐天寺',    lat:35.63493,lng:139.69408,toShinjuku:14, line:'東急東横線'},
   {name:'学芸大学',  lat:35.62614,lng:139.68636,toShinjuku:16, line:'東急東横線'},
@@ -271,6 +286,8 @@ const STATION_DB = [
   {name:'駒沢大学',  lat:35.63869,lng:139.64783,toShinjuku:16, line:'東急田園都市線'},
   {name:'三軒茶屋',  lat:35.64367,lng:139.66924,toShinjuku:14, line:'東急田園都市線'},
   {name:'池尻大橋',  lat:35.65025,lng:139.68031,toShinjuku:10, line:'東急田園都市線'},
+
+  // === 京王線 ===
   {name:'笹塚',      lat:35.67747,lng:139.67096,toShinjuku:6,  line:'京王線'},
   {name:'代田橋',    lat:35.67513,lng:139.65785,toShinjuku:8,  line:'京王線'},
   {name:'明大前',    lat:35.66833,lng:139.64860,toShinjuku:10, line:'京王線'},
@@ -283,6 +300,8 @@ const STATION_DB = [
   {name:'仙川',      lat:35.65265,lng:139.55748,toShinjuku:23, line:'京王線'},
   {name:'つつじヶ丘',lat:35.65165,lng:139.54178,toShinjuku:25, line:'京王線'},
   {name:'柴崎',      lat:35.64954,lng:139.52778,toShinjuku:27, line:'京王線'},
+
+  // === 東京メトロ半蔵門線 ===
   {name:'渋谷（半蔵門線）',lat:35.65910,lng:139.70140,toShinjuku:8,line:'東京メトロ半蔵門線'},
   {name:'表参道（半蔵門線）',lat:35.66512,lng:139.71240,toShinjuku:10,line:'東京メトロ半蔵門線'},
   {name:'青山一丁目（半蔵門線）',lat:35.67241,lng:139.72334,toShinjuku:12,line:'東京メトロ半蔵門線'},
@@ -291,6 +310,8 @@ const STATION_DB = [
   {name:'九段下',    lat:35.69598,lng:139.74933,toShinjuku:18, line:'東京メトロ半蔵門線'},
   {name:'神保町',    lat:35.69598,lng:139.75758,toShinjuku:19, line:'東京メトロ半蔵門線'},
   {name:'大手町',    lat:35.68487,lng:139.76326,toShinjuku:22, line:'東京メトロ半蔵門線'},
+
+  // === JR埼京線・湘南新宿ライン ===
   {name:'恵比寿（埼京線）',lat:35.64669,lng:139.71006,toShinjuku:5,line:'JR埼京線'},
   {name:'渋谷（埼京線）',lat:35.65910,lng:139.70140,toShinjuku:3,line:'JR埼京線'},
   {name:'池袋（埼京線）',lat:35.72876,lng:139.71038,toShinjuku:5,line:'JR埼京線'},
@@ -301,6 +322,8 @@ const STATION_DB = [
   {name:'浮間舟渡',  lat:35.79956,lng:139.70477,toShinjuku:19, line:'JR埼京線'},
   {name:'戸田公園',  lat:35.82040,lng:139.68074,toShinjuku:23, line:'JR埼京線'},
   {name:'戸田',      lat:35.81363,lng:139.67764,toShinjuku:21, line:'JR埼京線'},
+
+  // === 都営新宿線 ===
   {name:'新宿（都営新宿線）',lat:35.68950,lng:139.70050,toShinjuku:0,line:'都営新宿線'},
   {name:'新宿三丁目（都営）',lat:35.68910,lng:139.70730,toShinjuku:2,line:'都営新宿線'},
   {name:'曙橋',      lat:35.69174,lng:139.72553,toShinjuku:5,  line:'都営新宿線'},
@@ -312,6 +335,8 @@ const STATION_DB = [
   {name:'菊川',      lat:35.69120,lng:139.80100,toShinjuku:19, line:'都営新宿線'},
   {name:'住吉',      lat:35.68947,lng:139.81334,toShinjuku:21, line:'都営新宿線'},
   {name:'西大島',    lat:35.69147,lng:139.82518,toShinjuku:23, line:'都営新宿線'},
+
+  // === 都営大江戸線 ===
   {name:'都庁前',    lat:35.69052,lng:139.69218,toShinjuku:3,  line:'都営大江戸線'},
   {name:'西新宿五丁目',lat:35.68847,lng:139.68421,toShinjuku:4,line:'都営大江戸線'},
   {name:'中野坂上（大江戸線）',lat:35.70286,lng:139.67814,toShinjuku:6,line:'都営大江戸線'},
@@ -327,58 +352,83 @@ const STATION_DB = [
   {name:'築地市場',  lat:35.66285,lng:139.77006,toShinjuku:20, line:'都営大江戸線'},
   {name:'勝どき',    lat:35.66217,lng:139.77714,toShinjuku:21, line:'都営大江戸線'},
   {name:'月島',      lat:35.67190,lng:139.78430,toShinjuku:22, line:'都営大江戸線'},
-  {name:'門前仲町',  lat:35.67345,lng:139.79508,toShinjuku:24, line:'都営大江戸線'}
+  {name:'門前仲町',  lat:35.67345,lng:139.79508,toShinjuku:24, line:'都営大江戸線'},
 ];
 
+// 小田急線 狛江駅着時刻テーブル（平日）
 const KOMAE_ARR_WEEKDAY = [
-  {h:5,m:47,type:'各停'},{h:6,m:3,type:'各停'},{h:6,m:16,type:'各停'},{h:6,m:28,type:'各停'},{h:6,m:40,type:'各停'},{h:6,m:51,type:'各停'},
-  {h:7,m:2,type:'各停'},{h:7,m:11,type:'各停'},{h:7,m:20,type:'各停'},{h:7,m:29,type:'各停'},{h:7,m:38,type:'各停'},{h:7,m:47,type:'各停'},
-  {h:7,m:56,type:'各停'},{h:8,m:5,type:'各停'},{h:8,m:14,type:'各停'},{h:8,m:23,type:'各停'},{h:8,m:32,type:'各停'},{h:8,m:41,type:'各停'},
-  {h:8,m:50,type:'各停'},{h:9,m:2,type:'各停'},{h:9,m:14,type:'各停'},{h:9,m:26,type:'各停'},{h:9,m:38,type:'各停'},{h:9,m:50,type:'各停'},
-  {h:10,m:2,type:'各停'},{h:10,m:14,type:'各停'},{h:10,m:26,type:'各停'},{h:10,m:38,type:'各停'},{h:10,m:50,type:'各停'},{h:11,m:2,type:'各停'},
-  {h:11,m:14,type:'各停'},{h:11,m:26,type:'各停'},{h:11,m:38,type:'各停'},{h:11,m:50,type:'各停'},{h:12,m:2,type:'各停'},{h:12,m:14,type:'各停'},
-  {h:12,m:26,type:'各停'},{h:12,m:38,type:'各停'},{h:12,m:50,type:'各停'},{h:13,m:2,type:'各停'},{h:13,m:14,type:'各停'},{h:13,m:26,type:'各停'},
-  {h:13,m:38,type:'各停'},{h:13,m:50,type:'各停'},{h:14,m:2,type:'各停'},{h:14,m:14,type:'各停'},{h:14,m:26,type:'各停'},{h:14,m:38,type:'各停'},
-  {h:14,m:50,type:'各停'},{h:15,m:2,type:'各停'},{h:15,m:14,type:'各停'},{h:15,m:26,type:'各停'},{h:15,m:38,type:'各停'},{h:15,m:50,type:'各停'},
-  {h:16,m:2,type:'各停'},{h:16,m:14,type:'各停'},{h:16,m:26,type:'各停'},{h:16,m:38,type:'各停'},{h:16,m:50,type:'各停'},{h:17,m:2,type:'各停'},
-  {h:17,m:11,type:'各停'},{h:17,m:20,type:'各停'},{h:17,m:29,type:'各停'},{h:17,m:38,type:'各停'},{h:17,m:47,type:'各停'},{h:17,m:56,type:'各停'},
-  {h:18,m:5,type:'各停'},{h:18,m:14,type:'各停'},{h:18,m:23,type:'各停'},{h:18,m:32,type:'各停'},{h:18,m:41,type:'各停'},{h:18,m:50,type:'各停'},
-  {h:19,m:2,type:'各停'},{h:19,m:14,type:'各停'},{h:19,m:26,type:'各停'},{h:19,m:38,type:'各停'},{h:19,m:50,type:'各停'},{h:20,m:2,type:'各停'},
-  {h:20,m:17,type:'各停'},{h:20,m:32,type:'各停'},{h:20,m:47,type:'各停'},{h:21,m:2,type:'各停'},{h:21,m:17,type:'各停'},{h:21,m:32,type:'各停'},
-  {h:21,m:47,type:'各停'},{h:22,m:2,type:'各停'},{h:22,m:20,type:'各停'},{h:22,m:38,type:'各停'},{h:22,m:56,type:'各停'},{h:23,m:14,type:'各停'},
-  {h:23,m:35,type:'各停'},{h:23,m:58,type:'各停'},{h:0,m:20,type:'各停'}
+  {h:5,m:47,type:'各停'},{h:6,m:3,type:'各停'},{h:6,m:16,type:'各停'},
+  {h:6,m:28,type:'各停'},{h:6,m:40,type:'各停'},{h:6,m:51,type:'各停'},
+  {h:7,m:2,type:'各停'},{h:7,m:11,type:'各停'},{h:7,m:20,type:'各停'},
+  {h:7,m:29,type:'各停'},{h:7,m:38,type:'各停'},{h:7,m:47,type:'各停'},
+  {h:7,m:56,type:'各停'},{h:8,m:5,type:'各停'},{h:8,m:14,type:'各停'},
+  {h:8,m:23,type:'各停'},{h:8,m:32,type:'各停'},{h:8,m:41,type:'各停'},
+  {h:8,m:50,type:'各停'},{h:9,m:2,type:'各停'},{h:9,m:14,type:'各停'},
+  {h:9,m:26,type:'各停'},{h:9,m:38,type:'各停'},{h:9,m:50,type:'各停'},
+  {h:10,m:2,type:'各停'},{h:10,m:14,type:'各停'},{h:10,m:26,type:'各停'},
+  {h:10,m:38,type:'各停'},{h:10,m:50,type:'各停'},{h:11,m:2,type:'各停'},
+  {h:11,m:14,type:'各停'},{h:11,m:26,type:'各停'},{h:11,m:38,type:'各停'},
+  {h:11,m:50,type:'各停'},{h:12,m:2,type:'各停'},{h:12,m:14,type:'各停'},
+  {h:12,m:26,type:'各停'},{h:12,m:38,type:'各停'},{h:12,m:50,type:'各停'},
+  {h:13,m:2,type:'各停'},{h:13,m:14,type:'各停'},{h:13,m:26,type:'各停'},
+  {h:13,m:38,type:'各停'},{h:13,m:50,type:'各停'},{h:14,m:2,type:'各停'},
+  {h:14,m:14,type:'各停'},{h:14,m:26,type:'各停'},{h:14,m:38,type:'各停'},
+  {h:14,m:50,type:'各停'},{h:15,m:2,type:'各停'},{h:15,m:14,type:'各停'},
+  {h:15,m:26,type:'各停'},{h:15,m:38,type:'各停'},{h:15,m:50,type:'各停'},
+  {h:16,m:2,type:'各停'},{h:16,m:14,type:'各停'},{h:16,m:26,type:'各停'},
+  {h:16,m:38,type:'各停'},{h:16,m:50,type:'各停'},{h:17,m:2,type:'各停'},
+  {h:17,m:11,type:'各停'},{h:17,m:20,type:'各停'},{h:17,m:29,type:'各停'},
+  {h:17,m:38,type:'各停'},{h:17,m:47,type:'各停'},{h:17,m:56,type:'各停'},
+  {h:18,m:5,type:'各停'},{h:18,m:14,type:'各停'},{h:18,m:23,type:'各停'},
+  {h:18,m:32,type:'各停'},{h:18,m:41,type:'各停'},{h:18,m:50,type:'各停'},
+  {h:19,m:2,type:'各停'},{h:19,m:14,type:'各停'},{h:19,m:26,type:'各停'},
+  {h:19,m:38,type:'各停'},{h:19,m:50,type:'各停'},{h:20,m:2,type:'各停'},
+  {h:20,m:17,type:'各停'},{h:20,m:32,type:'各停'},{h:20,m:47,type:'各停'},
+  {h:21,m:2,type:'各停'},{h:21,m:17,type:'各停'},{h:21,m:32,type:'各停'},
+  {h:21,m:47,type:'各停'},{h:22,m:2,type:'各停'},{h:22,m:20,type:'各停'},
+  {h:22,m:38,type:'各停'},{h:22,m:56,type:'各停'},{h:23,m:14,type:'各停'},
+  {h:23,m:35,type:'各停'},{h:23,m:58,type:'各停'},{h:0,m:20,type:'各停'},
 ];
 
+// 土休日
 const KOMAE_ARR_HOLIDAY = [
-  {h:5,m:47,type:'各停'},{h:6,m:7,type:'各停'},{h:6,m:30,type:'各停'},{h:6,m:50,type:'各停'},{h:7,m:10,type:'各停'},{h:7,m:30,type:'各停'},
-  {h:7,m:50,type:'各停'},{h:8,m:10,type:'各停'},{h:8,m:30,type:'各停'},{h:8,m:50,type:'各停'},{h:9,m:10,type:'各停'},{h:9,m:30,type:'各停'},
-  {h:9,m:50,type:'各停'},{h:10,m:10,type:'各停'},{h:10,m:30,type:'各停'},{h:10,m:50,type:'各停'},{h:11,m:10,type:'各停'},{h:11,m:30,type:'各停'},
-  {h:11,m:50,type:'各停'},{h:12,m:10,type:'各停'},{h:12,m:30,type:'各停'},{h:12,m:50,type:'各停'},{h:13,m:10,type:'各停'},{h:13,m:30,type:'各停'},
-  {h:13,m:50,type:'各停'},{h:14,m:10,type:'各停'},{h:14,m:30,type:'各停'},{h:14,m:50,type:'各停'},{h:15,m:10,type:'各停'},{h:15,m:30,type:'各停'},
-  {h:15,m:50,type:'各停'},{h:16,m:10,type:'各停'},{h:16,m:30,type:'各停'},{h:16,m:50,type:'各停'},{h:17,m:10,type:'各停'},{h:17,m:30,type:'各停'},
-  {h:17,m:50,type:'各停'},{h:18,m:10,type:'各停'},{h:18,m:30,type:'各停'},{h:18,m:50,type:'各停'},{h:19,m:10,type:'各停'},{h:19,m:30,type:'各停'},
-  {h:19,m:50,type:'各停'},{h:20,m:10,type:'各停'},{h:20,m:30,type:'各停'},{h:20,m:50,type:'各停'},{h:21,m:10,type:'各停'},{h:21,m:35,type:'各停'},
-  {h:22,m:0,type:'各停'},{h:22,m:25,type:'各停'},{h:22,m:50,type:'各停'},{h:23,m:18,type:'各停'},{h:23,m:45,type:'各停'},{h:0,m:20,type:'各停'}
+  {h:5,m:47,type:'各停'},{h:6,m:7,type:'各停'},{h:6,m:30,type:'各停'},
+  {h:6,m:50,type:'各停'},{h:7,m:10,type:'各停'},{h:7,m:30,type:'各停'},
+  {h:7,m:50,type:'各停'},{h:8,m:10,type:'各停'},{h:8,m:30,type:'各停'},
+  {h:8,m:50,type:'各停'},{h:9,m:10,type:'各停'},{h:9,m:30,type:'各停'},
+  {h:9,m:50,type:'各停'},{h:10,m:10,type:'各停'},{h:10,m:30,type:'各停'},
+  {h:10,m:50,type:'各停'},{h:11,m:10,type:'各停'},{h:11,m:30,type:'各停'},
+  {h:11,m:50,type:'各停'},{h:12,m:10,type:'各停'},{h:12,m:30,type:'各停'},
+  {h:12,m:50,type:'各停'},{h:13,m:10,type:'各停'},{h:13,m:30,type:'各停'},
+  {h:13,m:50,type:'各停'},{h:14,m:10,type:'各停'},{h:14,m:30,type:'各停'},
+  {h:14,m:50,type:'各停'},{h:15,m:10,type:'各停'},{h:15,m:30,type:'各停'},
+  {h:15,m:50,type:'各停'},{h:16,m:10,type:'各停'},{h:16,m:30,type:'各停'},
+  {h:16,m:50,type:'各停'},{h:17,m:10,type:'各停'},{h:17,m:30,type:'各停'},
+  {h:17,m:50,type:'各停'},{h:18,m:10,type:'各停'},{h:18,m:30,type:'各停'},
+  {h:18,m:50,type:'各停'},{h:19,m:10,type:'各停'},{h:19,m:30,type:'各停'},
+  {h:19,m:50,type:'各停'},{h:20,m:10,type:'各停'},{h:20,m:30,type:'各停'},
+  {h:20,m:50,type:'各停'},{h:21,m:10,type:'各停'},{h:21,m:35,type:'各停'},
+  {h:22,m:0,type:'各停'},{h:22,m:25,type:'各停'},{h:22,m:50,type:'各停'},
+  {h:23,m:18,type:'各停'},{h:23,m:45,type:'各停'},{h:0,m:20,type:'各停'},
 ];
 
 // ============================================================
-// ステート管理とユーティリティ
+// State
 // ============================================================
 let S = {
-  lat:null, lng:null, locName:'取得中...',
-  nearestSt:null, distM:0, walkMin:0, walkSec:0,
-  trainIdx:0, countSec:0, interval:null, depSec:0
+  lat:null,lng:null,locName:'取得中...',
+  nearestSt:null,distM:0,walkMin:0,walkSec:0,
+  trainIdx:0,countSec:0,interval:null,depSec:0
 };
 
 function isHoliday(){ const d=new Date().getDay(); return d===0||d===6; }
 function timetable(){ return isHoliday()?KOMAE_ARR_HOLIDAY:KOMAE_ARR_WEEKDAY; }
 function pad(n){ return String(n).padStart(2,'0'); }
 
-// 時間の表示フォーマット（24時以降は0時台に戻す）
-function fmt(h,m){
+function fmt(h,m){ 
   let hm = Math.floor(h) % 24;
   if(hm < 0) hm += 24;
-  return `${pad(hm)}:${pad(m)}`;
+  return `${pad(hm)}:${pad(m)}`; 
 }
 function addMin(str,add){
   const[h,m]=str.split(':').map(Number),t=h*60+m+add;
@@ -393,54 +443,26 @@ function getNowAbsoluteSec() {
   return h * 3600 + d.getMinutes() * 60 + d.getSeconds();
 }
 
-// 時刻表のオブジェクトから絶対秒数を計算
 function getTrainAbsoluteSec(t) {
   let h = t.h < 4 ? t.h + 24 : t.h;
   return h * 3600 + t.m * 60;
 }
 
 // ============================================================
-// 1. GPS取得（強制タイムアウトのフェイルセーフ追加）
+// GPS
 // ============================================================
 function init(){
   show('現在地を取得中…\n位置情報の許可をお願いします',true);
   document.getElementById('retryBtn').style.display='none';
-  
-  if(!navigator.geolocation){
-    S.lat=35.6499; S.lng=139.6248; S.locName='経堂周辺（GPS非対応）';
-    computeSafe();
-    return;
-  }
-
-  // iOS Safariのサイレントブロック対策：5秒後に強制的に経堂駅で計算を開始
-  let fallbackTriggered = false;
-  const fallbackTimer = setTimeout(() => {
-    fallbackTriggered = true;
-    S.lat=35.6499; S.lng=139.6248; S.locName='経堂周辺（GPSタイムアウト）';
-    computeSafe();
-  }, 5000);
-
+  if(!navigator.geolocation){ showErr('位置情報が使えません'); return; }
   navigator.geolocation.getCurrentPosition(
-    pos=>{
-      if(fallbackTriggered) return;
-      clearTimeout(fallbackTimer);
-      S.lat=pos.coords.latitude; S.lng=pos.coords.longitude;
-      show('場所を特定中...',true);
-      geocode();
-    },
-    ()=>{
-      if(fallbackTriggered) return;
-      clearTimeout(fallbackTimer);
-      S.lat=35.6499; S.lng=139.6248; S.locName='経堂周辺（GPS失敗）';
-      computeSafe();
-    },
-    {enableHighAccuracy:false, timeout:4000, maximumAge:60000}
+    pos=>{ S.lat=pos.coords.latitude; S.lng=pos.coords.longitude;
+           show('場所を特定中...',true); geocode(); },
+    ()=>{ S.lat=35.6499; S.lng=139.6248; S.locName='経堂周辺（GPS失敗）'; computeSafe(); },
+    {enableHighAccuracy:true,timeout:12000,maximumAge:60000}
   );
 }
 
-// ============================================================
-// 2. 逆ジオコーディング
-// ============================================================
 async function geocode(){
   try {
     const r=await fetch(`https://mreversegeocoder.gsi.go.jp/reverse-geocoder/LonLatToAddress?lon=${S.lng}&lat=${S.lat}`);
@@ -450,7 +472,16 @@ async function geocode(){
       S.locName=(city+town)||'現在地';
     } else S.locName='現在地';
   } catch(e){
-    S.locName='現在地';
+    try {
+      const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${S.lat}&lon=${S.lng}&format=json&accept-language=ja`);
+      const d=await r.json();
+      if(d&&d.address){
+        const a=d.address;
+        const city=a.city||a.town||a.village||'';
+        const ward=a.city_district||a.suburb||a.neighbourhood||'';
+        S.locName=(ward?ward+' ':'')+city||'現在地';
+      } else S.locName='現在地';
+    } catch(e2){ S.locName='現在地'; }
   }
   computeSafe();
 }
@@ -471,14 +502,10 @@ function dist(la1,lo1,la2,lo2){
 }
 
 // ============================================================
-// 3. メイン計算ロジック（エラー捕捉ラッパー付き）
+// 最寄り駅から狛江までの電車を検索（小田急/他路線分岐対応）
 // ============================================================
 function computeSafe() {
-  try {
-    compute();
-  } catch(e) {
-    showErr('計算エラーが発生しました:\n' + e.message);
-  }
+  try { compute(); } catch(e) { showErr('計算エラーが発生しました'); }
 }
 
 function findTrain(walkSec, st, startIdx) {
@@ -486,6 +513,7 @@ function findTrain(walkSec, st, startIdx) {
   const ns = getNowAbsoluteSec();
 
   const isOdakyu = st.line === '小田急線';
+  // 小田急線沿線の場合は狛江までの時間、他路線の場合は新宿経由の時間を計算
   const transitSec = isOdakyu 
     ? (29 * 60) - (st.toShinjuku * 60) 
     : (st.toShinjuku * 60) + (29 * 60);
@@ -495,10 +523,11 @@ function findTrain(walkSec, st, startIdx) {
     const t = tbl[idx];
     
     let komaeArrSec = getTrainAbsoluteSec(t);
-    if (startIdx + i >= tbl.length) komaeArrSec += 86400;
+    if (startIdx + i >= tbl.length) komaeArrSec += 86400; // 翌日扱い補正
 
     const depSec = komaeArrSec - transitSec;
 
+    // 現在時刻 + 徒歩時間 + 1分の猶予
     if (depSec >= ns + walkSec + 60) {
         return {idx, train:t, komaeArrSec, depSec};
     }
@@ -509,11 +538,15 @@ function findTrain(walkSec, st, startIdx) {
   return {idx:0, train:fallback, komaeArrSec, depSec: komaeArrSec - transitSec};
 }
 
+// ============================================================
+// 計算・開始
+// ============================================================
 function compute(){
   const {st, distM} = findNearest();
   S.nearestSt = st; 
   S.distM = distM;
   
+  // 徒歩時間は不動産基準（分速80m）で算出
   const walkTotalSec = Math.ceil((distM / 80) * 60); 
   S.walkMin = Math.floor(walkTotalSec / 60);
   S.walkSec = walkTotalSec % 60;
@@ -522,6 +555,7 @@ function compute(){
   S.trainIdx = idx;
   S.depSec = depSec;
 
+  // カウントダウン = 最寄り駅出発時刻 - 現在時刻 - 徒歩時間
   S.countSec = Math.max(0, depSec - getNowAbsoluteSec() - walkTotalSec);
 
   updateUI(train, komaeArrSec, depSec, walkTotalSec, st);
@@ -549,7 +583,7 @@ function tick(walkSec, st){
 }
 
 // ============================================================
-// 4. UI更新処理
+// UI
 // ============================================================
 function updateUI(train, komaeArrSec, depSec, walkSec, st){
   const depH = Math.floor(depSec / 3600);
@@ -566,11 +600,13 @@ function updateUI(train, komaeArrSec, depSec, walkSec, st){
   document.getElementById('nearSt').textContent = st.name + '駅';
   document.getElementById('walkT').textContent = S.walkSec > 0 ? `${S.walkMin}分${S.walkSec}秒` : `${S.walkMin}分`;
   
+  // 常に最寄り駅を出発駅とする
   document.getElementById('depStation').textContent = st.name;
   document.getElementById('depTime').textContent = fmt(depH, depM);
   document.getElementById('trainType').textContent = isOdakyu ? train.type : '乗換あり';
   
-  document.getElementById('nextT').textContent = fmt(snjH, snjM);
+  // 小田急出発のカード：小田急沿線なら最寄り駅の出発時刻、それ以外なら新宿の出発時刻を表示
+  document.getElementById('nextT').textContent = isOdakyu ? fmt(depH, depM) : fmt(snjH, snjM);
   document.getElementById('komaeArr').textContent = fmt(train.h, train.m);
   document.getElementById('routeNote').textContent = routeNote;
   document.getElementById('homeArr').textContent = addMin(fmt(train.h, train.m), 10);
@@ -582,17 +618,13 @@ function updateCD(){
   const s = S.countSec;
   const m = Math.floor(s/60), sec = s % 60;
   document.getElementById('cdTime').textContent = `${pad(m)}:${pad(sec)}`;
-  
   const color = s > 600 ? '#22c55e' : s > 300 ? '#eab308' : s > 120 ? '#f97316' : '#ef4444';
   document.getElementById('cdTime').style.color = color;
   document.getElementById('cdTime').classList.toggle('urgent', s <= 120);
-  
-  const maxSec = 60 * 60;
-  const ratio = Math.min(s / maxSec, 1);
+  const maxSec = 60 * 60, ratio = Math.min(s / maxSec, 1);
   const ring = document.getElementById('ringFg');
   ring.style.strokeDashoffset = 603 * (1 - ratio);
   ring.style.stroke = color;
-  
   document.getElementById('cdSub').textContent =
     s <= 0 ? '出発時刻です！' : s <= 120 ? '急いで！' : s <= 300 ? 'もうすぐ出発' :
     s <= 900 ? 'そろそろ準備を' : '余裕あり';
@@ -622,7 +654,6 @@ function showErr(msg){
   document.getElementById('ovText').textContent=msg;
   document.getElementById('retryBtn').style.display='block';
 }
-
 if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 window.addEventListener('load',init);
 </script>

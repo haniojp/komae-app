@@ -10,132 +10,93 @@
 <title>Smart Transit Countdown</title>
 <link rel="manifest" href="manifest.json">
 <style>
-* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-:root {
-  --bg:#0a0f1e; --bg2:#111827; --bg3:#1a2235; --card:#1e2d45;
-  --border:rgba(255,255,255,0.08); --text:#f0f4ff; --muted:#8899bb;
-  --accent:#3b82f6; --green:#22c55e; --yellow:#eab308; --red:#ef4444;
-}
-html,body { height:100%; background:var(--bg); color:var(--text);
-  font-family:-apple-system,'Helvetica Neue',sans-serif; overflow-x:hidden; }
-body { display:flex; flex-direction:column; min-height:100vh;
-  min-height:-webkit-fill-available;
-  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
-
-.header { padding:14px 20px 6px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
-.header-title { font-size:13px; font-weight:600; color:var(--muted); letter-spacing:.08em; text-transform:uppercase; }
-.header-dest { font-size:13px; font-weight:700; color:var(--accent);
-  background:rgba(59,130,246,.12); padding:4px 10px; border-radius:20px;
-  border:1px solid rgba(59,130,246,.3); }
-
-.train-bar { margin:4px 16px 0; background:var(--bg3); border-radius:12px;
-  padding:10px 16px; display:flex; align-items:center; justify-content:space-between;
-  border:1px solid var(--border); flex-shrink:0; gap:8px; }
-.tb-item { text-align:center; }
-.tb-label { font-size:10px; color:var(--muted); margin-bottom:2px; }
-.tb-value { font-size:15px; font-weight:700; color:var(--text); }
-.tb-div { width:1px; height:32px; background:var(--border); }
-.train-badge { font-size:11px; font-weight:700; padding:3px 8px; border-radius:6px;
-  background:rgba(59,130,246,.2); color:#60a5fa; border:1px solid rgba(59,130,246,.3); }
-
-.countdown-section { flex:1; display:flex; flex-direction:column;
-  align-items:center; justify-content:center; padding:8px 20px; }
-.cd-label { font-size:11px; font-weight:600; letter-spacing:.15em;
-  text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
-
-.cd-ring { position:relative; width:210px; height:210px; margin-bottom:14px; }
-.cd-ring svg { position:absolute; top:0; left:0; transform:rotate(-90deg); }
-.ring-bg { fill:none; stroke:rgba(255,255,255,.06); stroke-width:6; }
-.ring-fg { fill:none; stroke-width:6; stroke-linecap:round; transition:stroke-dashoffset 1s linear,stroke .5s ease; }
-.cd-inner { position:absolute; inset:0; display:flex; flex-direction:column;
-  align-items:center; justify-content:center; }
-.cd-time { font-size:56px; font-weight:700; font-variant-numeric:tabular-nums;
-  letter-spacing:-2px; transition:color .5s ease; line-height:1; }
-.cd-sub { font-size:11px; color:var(--muted); margin-top:4px; }
-
-.map-btn { display:flex; align-items:center; gap:8px;
-  background:rgba(59,130,246,.15); border:1.5px solid rgba(59,130,246,.4);
-  color:#60a5fa; font-size:15px; font-weight:600; padding:11px 26px;
-  border-radius:50px; cursor:pointer; text-decoration:none; transition:all .2s; }
-.map-btn:active { transform:scale(.96); background:rgba(59,130,246,.25); }
-.map-btn svg { width:17px; height:17px; }
-
-.cards { padding:0 14px 14px; display:flex; flex-direction:column; gap:8px; flex-shrink:0; }
-.card-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-.card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:11px 13px; }
-.c-label { font-size:10px; font-weight:600; letter-spacing:.1em; text-transform:uppercase;
-  color:var(--muted); margin-bottom:4px; display:flex; align-items:center; gap:4px; }
-.c-val { font-size:15px; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.c-val.sm { font-size:13px; }
-.c-val.ac { color:#60a5fa; }
-.c-val.gr { color:var(--green); }
-
-.card-wide { background:var(--card); border:1px solid var(--border); border-radius:14px;
-  padding:11px 14px; display:flex; align-items:center; justify-content:space-between; }
-.home-time { font-size:22px; font-weight:700; color:var(--green); }
-.home-note { font-size:10px; color:var(--muted); margin-top:2px; }
-
-.overlay { position:fixed; inset:0; background:var(--bg); display:flex;
-  flex-direction:column; align-items:center; justify-content:center;
-  z-index:100; gap:16px; padding:40px; }
-.overlay.hidden { display:none; }
-.spinner { width:40px; height:40px; border:3px solid rgba(59,130,246,.2);
-  border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; }
-@keyframes spin { to { transform:rotate(360deg); } }
-.ov-text { font-size:16px; font-weight:500; color:var(--muted); text-align:center; line-height:1.7; }
-.retry-btn { background:none; border:1px solid var(--border); color:var(--muted);
-  font-size:13px; padding:8px 20px; border-radius:20px; cursor:pointer; margin-top:4px; }
-
-.notice { position:fixed; top:56px; left:16px; right:16px;
-  background:rgba(234,179,8,.15); border:1px solid rgba(234,179,8,.4);
-  border-radius:12px; padding:10px 16px; font-size:13px; font-weight:600;
-  color:#fbbf24; text-align:center; z-index:50;
-  opacity:0; transform:translateY(-8px); transition:all .3s; pointer-events:none; }
-.notice.show { opacity:1; transform:translateY(0); }
-
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.55} }
-.urgent { animation:pulse 1s ease-in-out infinite; }
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--bg:#0a0f1e;--bg3:#1a2235;--card:#1e2d45;--border:rgba(255,255,255,.08);
+  --text:#f0f4ff;--muted:#8899bb;--accent:#3b82f6;--green:#22c55e;--yellow:#eab308;--red:#ef4444}
+html,body{height:100%;background:var(--bg);color:var(--text);
+  font-family:-apple-system,'Helvetica Neue',sans-serif;overflow-x:hidden}
+body{display:flex;flex-direction:column;min-height:100vh;min-height:-webkit-fill-available;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.header{padding:14px 20px 6px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.header-title{font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.header-dest{font-size:13px;font-weight:700;color:var(--accent);background:rgba(59,130,246,.12);
+  padding:4px 10px;border-radius:20px;border:1px solid rgba(59,130,246,.3)}
+.train-bar{margin:4px 16px 0;background:var(--bg3);border-radius:12px;padding:10px 16px;
+  display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border);flex-shrink:0}
+.tb-label{font-size:10px;color:var(--muted);margin-bottom:2px}
+.tb-value{font-size:15px;font-weight:700;color:var(--text)}
+.tb-div{width:1px;height:32px;background:var(--border)}
+.train-badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;
+  background:rgba(59,130,246,.2);color:#60a5fa;border:1px solid rgba(59,130,246,.3)}
+.countdown-section{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 20px}
+.cd-label{font-size:11px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.cd-ring{position:relative;width:210px;height:210px;margin-bottom:14px}
+.cd-ring svg{position:absolute;top:0;left:0;transform:rotate(-90deg)}
+.ring-bg{fill:none;stroke:rgba(255,255,255,.06);stroke-width:6}
+.ring-fg{fill:none;stroke-width:6;stroke-linecap:round;transition:stroke-dashoffset 1s linear,stroke .5s ease}
+.cd-inner{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.cd-time{font-size:56px;font-weight:700;font-variant-numeric:tabular-nums;
+  letter-spacing:-2px;transition:color .5s ease;line-height:1}
+.cd-sub{font-size:11px;color:var(--muted);margin-top:4px}
+.map-btn{display:flex;align-items:center;gap:8px;background:rgba(59,130,246,.15);
+  border:1.5px solid rgba(59,130,246,.4);color:#60a5fa;font-size:15px;font-weight:600;
+  padding:11px 26px;border-radius:50px;cursor:pointer;text-decoration:none;transition:all .2s}
+.map-btn:active{transform:scale(.96);background:rgba(59,130,246,.25)}
+.map-btn svg{width:17px;height:17px}
+.cards{padding:0 14px 14px;display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+.card-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:11px 13px}
+.c-label{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:4px}
+.c-val{font-size:15px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c-val.sm{font-size:13px}.c-val.ac{color:#60a5fa}.c-val.gr{color:var(--green)}
+.card-wide{background:var(--card);border:1px solid var(--border);border-radius:14px;
+  padding:11px 14px;display:flex;align-items:center;justify-content:space-between}
+.home-time{font-size:22px;font-weight:700;color:var(--green)}
+.home-note{font-size:10px;color:var(--muted);margin-top:2px}
+.overlay{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;z-index:100;gap:16px;padding:40px}
+.overlay.hidden{display:none}
+.spinner{width:40px;height:40px;border:3px solid rgba(59,130,246,.2);
+  border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ov-text{font-size:16px;font-weight:500;color:var(--muted);text-align:center;line-height:1.7}
+.retry-btn{background:none;border:1px solid var(--border);color:var(--muted);
+  font-size:13px;padding:8px 20px;border-radius:20px;cursor:pointer;margin-top:4px}
+.notice{position:fixed;top:56px;left:16px;right:16px;background:rgba(234,179,8,.15);
+  border:1px solid rgba(234,179,8,.4);border-radius:12px;padding:10px 16px;
+  font-size:13px;font-weight:600;color:#fbbf24;text-align:center;z-index:50;
+  opacity:0;transform:translateY(-8px);transition:all .3s;pointer-events:none}
+.notice.show{opacity:1;transform:translateY(0)}
+.route-tag{font-size:10px;color:var(--muted);margin-top:3px}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
+.urgent{animation:pulse 1s ease-in-out infinite}
 </style>
 </head>
 <body>
-
 <div class="overlay" id="overlay">
   <div class="spinner" id="spin"></div>
   <div class="ov-text" id="ovText">現在地を取得中…<br>位置情報の許可をお願いします</div>
   <button class="retry-btn" id="retryBtn" style="display:none" onclick="init()">再試行する</button>
 </div>
-
 <div class="notice" id="notice"></div>
-
 <div class="header">
   <div class="header-title">Smart Transit</div>
   <div class="header-dest">🚉 狛江駅 行き</div>
 </div>
-
 <div class="train-bar">
-  <div class="tb-item">
-    <div class="tb-label">乗車駅</div>
-    <div class="tb-value" id="depStation">—</div>
-  </div>
+  <div><div class="tb-label">乗車駅</div><div class="tb-value" id="depStation">—</div></div>
   <div class="tb-div"></div>
-  <div class="tb-item">
-    <div class="tb-label">出発時刻</div>
-    <div class="tb-value" id="depTime">—:—</div>
-  </div>
+  <div><div class="tb-label">出発時刻</div><div class="tb-value" id="depTime">—:—</div></div>
   <div class="tb-div"></div>
-  <div class="tb-item">
-    <div class="tb-label">種別</div>
-    <div class="train-badge" id="trainType">—</div>
-  </div>
+  <div><div class="tb-label">種別</div><div class="train-badge" id="trainType">—</div></div>
 </div>
-
 <div class="countdown-section">
-  <div class="cd-label">出発まで</div>
+  <div class="cd-label">狛江駅 到着まで</div>
   <div class="cd-ring">
     <svg viewBox="0 0 210 210" width="210" height="210">
       <circle class="ring-bg" cx="105" cy="105" r="96"/>
-      <circle class="ring-fg" id="ringFg" cx="105" cy="105" r="96"
-        stroke-dasharray="603" stroke-dashoffset="0"/>
+      <circle class="ring-fg" id="ringFg" cx="105" cy="105" r="96" stroke-dasharray="603" stroke-dashoffset="0"/>
     </svg>
     <div class="cd-inner">
       <div class="cd-time" id="cdTime">—:——</div>
@@ -149,7 +110,6 @@ body { display:flex; flex-direction:column; min-height:100vh;
     地図で経路を見る
   </a>
 </div>
-
 <div class="cards">
   <div class="card-row">
     <div class="card">
@@ -167,7 +127,7 @@ body { display:flex; flex-direction:column; min-height:100vh;
       <div class="c-val" id="walkT">— 分</div>
     </div>
     <div class="card">
-      <div class="c-label">🕐 次の電車</div>
+      <div class="c-label">🕐 小田急 出発</div>
       <div class="c-val ac" id="nextT">—:—</div>
     </div>
   </div>
@@ -180,23 +140,222 @@ body { display:flex; flex-direction:column; min-height:100vh;
     <div style="text-align:right">
       <div class="c-label" style="justify-content:flex-end">🎯 狛江駅 着</div>
       <div class="c-val ac" style="font-size:18px" id="komaeArr">—:—</div>
-      <div class="home-note" id="routeNote">小田急線</div>
+      <div class="route-tag" id="routeNote">—</div>
     </div>
   </div>
 </div>
 
 <script>
 // ============================================================
-// 小田急線 各駅→狛江駅 時刻表
-// 狛江駅は各駅停車のみ停車。急行・快急は成城学園前で各停に乗り換え。
-// 下記は各駅の「狛江方面」発車時刻（平日）
-// 狛江駅着時刻も収録
+// 東京都内 主要駅データベース
+// 各駅から新宿までの所要時間（電車・分）を内蔵
+// 徒歩距離(m)は現在地からGPSで計算
 // ============================================================
+const STATION_DB = [
+  // === 小田急線（新宿起点） ===
+  {name:'新宿',      lat:35.68950,lng:139.70050,toShinjuku:0,  line:'小田急線'},
+  {name:'南新宿',    lat:35.68383,lng:139.69916,toShinjuku:2,  line:'小田急線'},
+  {name:'参宮橋',    lat:35.67874,lng:139.69538,toShinjuku:4,  line:'小田急線'},
+  {name:'代々木八幡',lat:35.67164,lng:139.69324,toShinjuku:6,  line:'小田急線'},
+  {name:'代々木上原',lat:35.66421,lng:139.68547,toShinjuku:8,  line:'小田急線'},
+  {name:'東北沢',    lat:35.66014,lng:139.68101,toShinjuku:9,  line:'小田急線'},
+  {name:'下北沢',    lat:35.66138,lng:139.66792,toShinjuku:11, line:'小田急線'},
+  {name:'世田谷代田',lat:35.65878,lng:139.65528,toShinjuku:13, line:'小田急線'},
+  {name:'梅ヶ丘',    lat:35.65705,lng:139.64465,toShinjuku:15, line:'小田急線'},
+  {name:'豪徳寺',    lat:35.65419,lng:139.63623,toShinjuku:17, line:'小田急線'},
+  {name:'経堂',      lat:35.64990,lng:139.62476,toShinjuku:19, line:'小田急線'},
+  {name:'千歳船橋',  lat:35.64479,lng:139.61369,toShinjuku:21, line:'小田急線'},
+  {name:'祖師ヶ谷大蔵',lat:35.63786,lng:139.60203,toShinjuku:23,line:'小田急線'},
+  {name:'成城学園前',lat:35.63229,lng:139.58997,toShinjuku:25, line:'小田急線'},
+  {name:'喜多見',    lat:35.62706,lng:139.57538,toShinjuku:27, line:'小田急線'},
+  {name:'狛江',      lat:35.62142,lng:139.56494,toShinjuku:29, line:'小田急線'},
 
-// 狛江駅に停まる各停の時刻（新宿→狛江 所要約29分）
-// 各駅の発車時刻 = 狛江着時刻 - 各駅から狛江までの所要時間
+  // === JR山手線 ===
+  {name:'渋谷',      lat:35.65910,lng:139.70140,toShinjuku:5,  line:'JR山手線'},
+  {name:'原宿',      lat:35.67069,lng:139.70267,toShinjuku:3,  line:'JR山手線'},
+  {name:'代々木',    lat:35.68303,lng:139.70220,toShinjuku:2,  line:'JR山手線'},
+  {name:'新大久保',  lat:35.70078,lng:139.70011,toShinjuku:2,  line:'JR山手線'},
+  {name:'高田馬場',  lat:35.71238,lng:139.70376,toShinjuku:4,  line:'JR山手線'},
+  {name:'目白',      lat:35.71879,lng:139.70637,toShinjuku:6,  line:'JR山手線'},
+  {name:'池袋',      lat:35.72876,lng:139.71038,toShinjuku:8,  line:'JR山手線'},
+  {name:'恵比寿',    lat:35.64669,lng:139.71006,toShinjuku:8,  line:'JR山手線'},
+  {name:'目黒',      lat:35.63393,lng:139.71558,toShinjuku:10, line:'JR山手線'},
+  {name:'五反田',    lat:35.62585,lng:139.72354,toShinjuku:13, line:'JR山手線'},
+  {name:'大崎',      lat:35.61948,lng:139.72855,toShinjuku:15, line:'JR山手線'},
+  {name:'品川',      lat:35.62876,lng:139.73876,toShinjuku:18, line:'JR山手線'},
+  {name:'田町',      lat:35.64565,lng:139.74759,toShinjuku:20, line:'JR山手線'},
+  {name:'浜松町',    lat:35.65507,lng:139.75693,toShinjuku:22, line:'JR山手線'},
+  {name:'新橋',      lat:35.66615,lng:139.75840,toShinjuku:23, line:'JR山手線'},
+  {name:'有楽町',    lat:35.67511,lng:139.76316,toShinjuku:24, line:'JR山手線'},
+  {name:'東京',      lat:35.68124,lng:139.76712,toShinjuku:26, line:'JR山手線'},
+  {name:'神田',      lat:35.69158,lng:139.77087,toShinjuku:23, line:'JR中央線'},
+  {name:'秋葉原',    lat:35.69814,lng:139.77315,toShinjuku:23, line:'JR山手線'},
+  {name:'御徒町',    lat:35.70758,lng:139.77476,toShinjuku:24, line:'JR山手線'},
+  {name:'上野',      lat:35.71379,lng:139.77725,toShinjuku:25, line:'JR山手線'},
+  {name:'鶯谷',      lat:35.72094,lng:139.77837,toShinjuku:27, line:'JR山手線'},
+  {name:'日暮里',    lat:35.72782,lng:139.77085,toShinjuku:29, line:'JR山手線'},
+  {name:'西日暮里',  lat:35.73214,lng:139.76670,toShinjuku:30, line:'JR山手線'},
+  {name:'田端',      lat:35.73788,lng:139.76106,toShinjuku:31, line:'JR山手線'},
+  {name:'駒込',      lat:35.73604,lng:139.74842,toShinjuku:29, line:'JR山手線'},
+  {name:'巣鴨',      lat:35.73352,lng:139.73953,toShinjuku:28, line:'JR山手線'},
+  {name:'大塚',      lat:35.72898,lng:139.72855,toShinjuku:26, line:'JR山手線'},
+  {name:'新大塚',    lat:35.72282,lng:139.72944,toShinjuku:25, line:'東京メトロ丸ノ内線'},
 
-// 狛江駅到着時刻リスト（平日）- これをベースに各駅の発車時刻を逆算
+  // === JR中央線・総武線 ===
+  {name:'中野',      lat:35.70578,lng:139.66389,toShinjuku:6,  line:'JR中央線'},
+  {name:'高円寺',    lat:35.70571,lng:139.64967,toShinjuku:8,  line:'JR中央線'},
+  {name:'阿佐ヶ谷',  lat:35.70526,lng:139.63632,toShinjuku:10, line:'JR中央線'},
+  {name:'荻窪',      lat:35.70596,lng:139.62024,toShinjuku:12, line:'JR中央線'},
+  {name:'西荻窪',    lat:35.70580,lng:139.60333,toShinjuku:14, line:'JR中央線'},
+  {name:'吉祥寺',    lat:35.70289,lng:139.57967,toShinjuku:16, line:'JR中央線'},
+  {name:'三鷹',      lat:35.70240,lng:139.56024,toShinjuku:18, line:'JR中央線'},
+  {name:'武蔵境',    lat:35.70467,lng:139.54379,toShinjuku:21, line:'JR中央線'},
+  {name:'東小金井',  lat:35.70264,lng:139.52631,toShinjuku:23, line:'JR中央線'},
+  {name:'武蔵小金井',lat:35.70087,lng:139.50730,toShinjuku:25, line:'JR中央線'},
+  {name:'国分寺',    lat:35.70164,lng:139.48338,toShinjuku:28, line:'JR中央線'},
+  {name:'四ツ谷',    lat:35.68659,lng:139.73013,toShinjuku:6,  line:'JR中央線'},
+  {name:'市ヶ谷',    lat:35.69148,lng:139.73712,toShinjuku:9,  line:'JR中央線'},
+  {name:'飯田橋',    lat:35.70206,lng:139.74693,toShinjuku:11, line:'JR中央線'},
+  {name:'水道橋',    lat:35.70200,lng:139.75330,toShinjuku:13, line:'JR中央線'},
+  {name:'御茶ノ水',  lat:35.69803,lng:139.76431,toShinjuku:15, line:'JR中央線'},
+
+  // === 東京メトロ丸ノ内線 ===
+  {name:'荻窪（丸ノ内線）',lat:35.70596,lng:139.62024,toShinjuku:12,line:'東京メトロ丸ノ内線'},
+  {name:'南阿佐ヶ谷',lat:35.70427,lng:139.63855,toShinjuku:10,line:'東京メトロ丸ノ内線'},
+  {name:'新高円寺',  lat:35.70502,lng:139.65100,toShinjuku:8,  line:'東京メトロ丸ノ内線'},
+  {name:'東高円寺',  lat:35.70497,lng:139.66111,toShinjuku:6,  line:'東京メトロ丸ノ内線'},
+  {name:'新中野',    lat:35.70580,lng:139.66869,toShinjuku:5,  line:'東京メトロ丸ノ内線'},
+  {name:'中野坂上',  lat:35.70286,lng:139.67814,toShinjuku:4,  line:'東京メトロ丸ノ内線'},
+  {name:'西新宿',    lat:35.69280,lng:139.68954,toShinjuku:2,  line:'東京メトロ丸ノ内線'},
+  {name:'淡路町',    lat:35.69413,lng:139.76490,toShinjuku:14, line:'東京メトロ丸ノ内線'},
+  {name:'御茶ノ水（丸ノ内線）',lat:35.69803,lng:139.76431,toShinjuku:15,line:'東京メトロ丸ノ内線'},
+  {name:'本郷三丁目',lat:35.70800,lng:139.75931,toShinjuku:16, line:'東京メトロ丸ノ内線'},
+  {name:'後楽園',    lat:35.71135,lng:139.75195,toShinjuku:17, line:'東京メトロ丸ノ内線'},
+  {name:'茗荷谷',    lat:35.71833,lng:139.72934,toShinjuku:20, line:'東京メトロ丸ノ内線'},
+  {name:'池袋（丸ノ内線）',lat:35.72876,lng:139.71038,toShinjuku:10,line:'東京メトロ丸ノ内線'},
+  {name:'霞ケ関',    lat:35.67400,lng:139.74973,toShinjuku:16, line:'東京メトロ丸ノ内線'},
+  {name:'銀座',      lat:35.67148,lng:139.76544,toShinjuku:19, line:'東京メトロ丸ノ内線'},
+  {name:'東京（丸ノ内線）',lat:35.68124,lng:139.76712,toShinjuku:21,line:'東京メトロ丸ノ内線'},
+
+  // === 東京メトロ副都心線・有楽町線 ===
+  {name:'和光市',    lat:35.78504,lng:139.61130,toShinjuku:28, line:'東京メトロ副都心線'},
+  {name:'地下鉄成増',lat:35.77460,lng:139.62430,toShinjuku:26, line:'東京メトロ副都心線'},
+  {name:'地下鉄赤塚',lat:35.76583,lng:139.63436,toShinjuku:25, line:'東京メトロ副都心線'},
+  {name:'平和台',    lat:35.75698,lng:139.64380,toShinjuku:23, line:'東京メトロ副都心線'},
+  {name:'氷川台',    lat:35.74774,lng:139.65240,toShinjuku:22, line:'東京メトロ副都心線'},
+  {name:'小竹向原',  lat:35.74097,lng:139.66647,toShinjuku:20, line:'東京メトロ副都心線'},
+  {name:'千川',      lat:35.73502,lng:139.68007,toShinjuku:18, line:'東京メトロ副都心線'},
+  {name:'要町',      lat:35.73261,lng:139.69289,toShinjuku:16, line:'東京メトロ副都心線'},
+  {name:'池袋（副都心線）',lat:35.72876,lng:139.71038,toShinjuku:14,line:'東京メトロ副都心線'},
+  {name:'雑司が谷',  lat:35.72268,lng:139.71428,toShinjuku:12, line:'東京メトロ副都心線'},
+  {name:'西早稲田',  lat:35.71014,lng:139.71878,toShinjuku:10, line:'東京メトロ副都心線'},
+  {name:'東新宿',    lat:35.69503,lng:139.71303,toShinjuku:4,  line:'東京メトロ副都心線'},
+  {name:'新宿三丁目',lat:35.68910,lng:139.70730,toShinjuku:2,  line:'東京メトロ副都心線'},
+  {name:'北参道',    lat:35.67840,lng:139.70750,toShinjuku:4,  line:'東京メトロ副都心線'},
+  {name:'明治神宮前',lat:35.66969,lng:139.70267,toShinjuku:6,  line:'東京メトロ副都心線'},
+  {name:'渋谷（副都心線）',lat:35.65910,lng:139.70140,toShinjuku:8,line:'東京メトロ副都心線'},
+
+  // === 東京メトロ銀座線 ===
+  {name:'表参道',    lat:35.66512,lng:139.71240,toShinjuku:10, line:'東京メトロ銀座線'},
+  {name:'外苑前',    lat:35.67291,lng:139.71697,toShinjuku:8,  line:'東京メトロ銀座線'},
+  {name:'青山一丁目',lat:35.67241,lng:139.72334,toShinjuku:10, line:'東京メトロ銀座線'},
+  {name:'赤坂見附',  lat:35.67943,lng:139.72942,toShinjuku:12, line:'東京メトロ銀座線'},
+  {name:'溜池山王',  lat:35.67450,lng:139.74119,toShinjuku:13, line:'東京メトロ銀座線'},
+  {name:'虎ノ門',    lat:35.66904,lng:139.74901,toShinjuku:15, line:'東京メトロ銀座線'},
+  {name:'新橋（銀座線）',lat:35.66615,lng:139.75840,toShinjuku:17,line:'東京メトロ銀座線'},
+  {name:'銀座（銀座線）',lat:35.67148,lng:139.76544,toShinjuku:18,line:'東京メトロ銀座線'},
+  {name:'京橋',      lat:35.67485,lng:139.76827,toShinjuku:19, line:'東京メトロ銀座線'},
+  {name:'日本橋',    lat:35.68272,lng:139.77434,toShinjuku:21, line:'東京メトロ銀座線'},
+  {name:'三越前',    lat:35.68507,lng:139.77397,toShinjuku:22, line:'東京メトロ銀座線'},
+  {name:'上野（銀座線）',lat:35.71379,lng:139.77725,toShinjuku:28,line:'東京メトロ銀座線'},
+  {name:'稲荷町',    lat:35.71249,lng:139.78350,toShinjuku:29, line:'東京メトロ銀座線'},
+  {name:'田原町',    lat:35.71108,lng:139.79000,toShinjuku:31, line:'東京メトロ銀座線'},
+  {name:'浅草',      lat:35.71149,lng:139.79703,toShinjuku:32, line:'東京メトロ銀座線'},
+
+  // === 東急東横線・田園都市線 ===
+  {name:'中目黒',    lat:35.64426,lng:139.69824,toShinjuku:12, line:'東急東横線'},
+  {name:'祐天寺',    lat:35.63493,lng:139.69408,toShinjuku:14, line:'東急東横線'},
+  {name:'学芸大学',  lat:35.62614,lng:139.68636,toShinjuku:16, line:'東急東横線'},
+  {name:'都立大学',  lat:35.61659,lng:139.68176,toShinjuku:18, line:'東急東横線'},
+  {name:'自由が丘',  lat:35.60799,lng:139.66860,toShinjuku:20, line:'東急東横線'},
+  {name:'田園調布',  lat:35.60253,lng:139.65769,toShinjuku:22, line:'東急東横線'},
+  {name:'多摩川',    lat:35.58910,lng:139.65870,toShinjuku:25, line:'東急東横線'},
+  {name:'二子玉川',  lat:35.60878,lng:139.62938,toShinjuku:18, line:'東急田園都市線'},
+  {name:'用賀',      lat:35.62177,lng:139.62418,toShinjuku:20, line:'東急田園都市線'},
+  {name:'桜新町',    lat:35.63048,lng:139.62884,toShinjuku:18, line:'東急田園都市線'},
+  {name:'駒沢大学',  lat:35.63869,lng:139.64783,toShinjuku:16, line:'東急田園都市線'},
+  {name:'三軒茶屋',  lat:35.64367,lng:139.66924,toShinjuku:14, line:'東急田園都市線'},
+  {name:'池尻大橋',  lat:35.65025,lng:139.68031,toShinjuku:10, line:'東急田園都市線'},
+
+  // === 京王線 ===
+  {name:'笹塚',      lat:35.67747,lng:139.67096,toShinjuku:6,  line:'京王線'},
+  {name:'代田橋',    lat:35.67513,lng:139.65785,toShinjuku:8,  line:'京王線'},
+  {name:'明大前',    lat:35.66833,lng:139.64860,toShinjuku:10, line:'京王線'},
+  {name:'下高井戸',  lat:35.66550,lng:139.63697,toShinjuku:12, line:'京王線'},
+  {name:'桜上水',    lat:35.66286,lng:139.62401,toShinjuku:14, line:'京王線'},
+  {name:'上北沢',    lat:35.65999,lng:139.61347,toShinjuku:16, line:'京王線'},
+  {name:'八幡山',    lat:35.65801,lng:139.60086,toShinjuku:18, line:'京王線'},
+  {name:'芦花公園',  lat:35.65657,lng:139.58878,toShinjuku:19, line:'京王線'},
+  {name:'千歳烏山',  lat:35.65438,lng:139.57503,toShinjuku:21, line:'京王線'},
+  {name:'仙川',      lat:35.65265,lng:139.55748,toShinjuku:23, line:'京王線'},
+  {name:'つつじヶ丘',lat:35.65165,lng:139.54178,toShinjuku:25, line:'京王線'},
+  {name:'柴崎',      lat:35.64954,lng:139.52778,toShinjuku:27, line:'京王線'},
+
+  // === 東京メトロ半蔵門線 ===
+  {name:'渋谷（半蔵門線）',lat:35.65910,lng:139.70140,toShinjuku:8,line:'東京メトロ半蔵門線'},
+  {name:'表参道（半蔵門線）',lat:35.66512,lng:139.71240,toShinjuku:10,line:'東京メトロ半蔵門線'},
+  {name:'青山一丁目（半蔵門線）',lat:35.67241,lng:139.72334,toShinjuku:12,line:'東京メトロ半蔵門線'},
+  {name:'永田町',    lat:35.67560,lng:139.74283,toShinjuku:14, line:'東京メトロ半蔵門線'},
+  {name:'半蔵門',    lat:35.68141,lng:139.74813,toShinjuku:16, line:'東京メトロ半蔵門線'},
+  {name:'九段下',    lat:35.69598,lng:139.74933,toShinjuku:18, line:'東京メトロ半蔵門線'},
+  {name:'神保町',    lat:35.69598,lng:139.75758,toShinjuku:19, line:'東京メトロ半蔵門線'},
+  {name:'大手町',    lat:35.68487,lng:139.76326,toShinjuku:22, line:'東京メトロ半蔵門線'},
+
+  // === JR埼京線・湘南新宿ライン ===
+  {name:'恵比寿（埼京線）',lat:35.64669,lng:139.71006,toShinjuku:5,line:'JR埼京線'},
+  {name:'渋谷（埼京線）',lat:35.65910,lng:139.70140,toShinjuku:3,line:'JR埼京線'},
+  {name:'池袋（埼京線）',lat:35.72876,lng:139.71038,toShinjuku:5,line:'JR埼京線'},
+  {name:'板橋',      lat:35.74950,lng:139.71061,toShinjuku:8,  line:'JR埼京線'},
+  {name:'十条',      lat:35.76109,lng:139.71715,toShinjuku:10, line:'JR埼京線'},
+  {name:'赤羽',      lat:35.77792,lng:139.72108,toShinjuku:14, line:'JR埼京線'},
+  {name:'北赤羽',    lat:35.79098,lng:139.71669,toShinjuku:17, line:'JR埼京線'},
+  {name:'浮間舟渡',  lat:35.79956,lng:139.70477,toShinjuku:19, line:'JR埼京線'},
+  {name:'戸田公園',  lat:35.82040,lng:139.68074,toShinjuku:23, line:'JR埼京線'},
+  {name:'戸田',      lat:35.81363,lng:139.67764,toShinjuku:21, line:'JR埼京線'},
+
+  // === 都営新宿線 ===
+  {name:'新宿（都営新宿線）',lat:35.68950,lng:139.70050,toShinjuku:0,line:'都営新宿線'},
+  {name:'新宿三丁目（都営）',lat:35.68910,lng:139.70730,toShinjuku:2,line:'都営新宿線'},
+  {name:'曙橋',      lat:35.69174,lng:139.72553,toShinjuku:5,  line:'都営新宿線'},
+  {name:'市ヶ谷（都営）',lat:35.69148,lng:139.73712,toShinjuku:7,line:'都営新宿線'},
+  {name:'岩本町',    lat:35.69746,lng:139.77476,toShinjuku:12, line:'都営新宿線'},
+  {name:'馬喰横山',  lat:35.69201,lng:139.78100,toShinjuku:13, line:'都営新宿線'},
+  {name:'浜町',      lat:35.68700,lng:139.78430,toShinjuku:15, line:'都営新宿線'},
+  {name:'森下',      lat:35.68583,lng:139.79530,toShinjuku:17, line:'都営新宿線'},
+  {name:'菊川',      lat:35.69120,lng:139.80100,toShinjuku:19, line:'都営新宿線'},
+  {name:'住吉',      lat:35.68947,lng:139.81334,toShinjuku:21, line:'都営新宿線'},
+  {name:'西大島',    lat:35.69147,lng:139.82518,toShinjuku:23, line:'都営新宿線'},
+
+  // === 都営大江戸線 ===
+  {name:'都庁前',    lat:35.69052,lng:139.69218,toShinjuku:3,  line:'都営大江戸線'},
+  {name:'西新宿五丁目',lat:35.68847,lng:139.68421,toShinjuku:4,line:'都営大江戸線'},
+  {name:'中野坂上（大江戸線）',lat:35.70286,lng:139.67814,toShinjuku:6,line:'都営大江戸線'},
+  {name:'東中野',    lat:35.71102,lng:139.67456,toShinjuku:8,  line:'都営大江戸線'},
+  {name:'中井',      lat:35.71888,lng:139.67830,toShinjuku:10, line:'都営大江戸線'},
+  {name:'落合南長崎',lat:35.72296,lng:139.68581,toShinjuku:12, line:'都営大江戸線'},
+  {name:'新江古田',  lat:35.73044,lng:139.69137,toShinjuku:14, line:'都営大江戸線'},
+  {name:'練馬',      lat:35.73567,lng:139.65361,toShinjuku:18, line:'都営大江戸線'},
+  {name:'六本木',    lat:35.66508,lng:139.73126,toShinjuku:12, line:'都営大江戸線'},
+  {name:'麻布十番',  lat:35.65571,lng:139.73789,toShinjuku:14, line:'都営大江戸線'},
+  {name:'大門',      lat:35.65584,lng:139.75704,toShinjuku:17, line:'都営大江戸線'},
+  {name:'汐留',      lat:35.65516,lng:139.75800,toShinjuku:18, line:'都営大江戸線'},
+  {name:'築地市場',  lat:35.66285,lng:139.77006,toShinjuku:20, line:'都営大江戸線'},
+  {name:'勝どき',    lat:35.66217,lng:139.77714,toShinjuku:21, line:'都営大江戸線'},
+  {name:'月島',      lat:35.67190,lng:139.78430,toShinjuku:22, line:'都営大江戸線'},
+  {name:'門前仲町',  lat:35.67345,lng:139.79508,toShinjuku:24, line:'都営大江戸線'},
+];
+
+// 小田急線 狛江駅着時刻テーブル（平日）
 const KOMAE_ARR_WEEKDAY = [
   {h:5,m:47,type:'各停'},{h:6,m:3,type:'各停'},{h:6,m:16,type:'各停'},
   {h:6,m:28,type:'各停'},{h:6,m:40,type:'各停'},{h:6,m:51,type:'各停'},
@@ -253,267 +412,215 @@ const KOMAE_ARR_HOLIDAY = [
   {h:23,m:18,type:'各停'},{h:23,m:45,type:'各停'},{h:0,m:20,type:'各停'},
 ];
 
-// 各駅の座標（Google Maps実測値）＋ 狛江駅までの正確な所要時間（各停・分）
-// 所要時間は実際の時刻表から計測した値
-const STATIONS = [
-  {name:'新宿',        lat:35.68950, lng:139.70050, toKomae:29},
-  {name:'南新宿',      lat:35.68383, lng:139.69916, toKomae:28},
-  {name:'参宮橋',      lat:35.67874, lng:139.69538, toKomae:26},
-  {name:'代々木八幡',  lat:35.67164, lng:139.69324, toKomae:25},
-  {name:'代々木上原',  lat:35.66421, lng:139.68547, toKomae:23},
-  {name:'東北沢',      lat:35.66014, lng:139.68101, toKomae:22},
-  {name:'下北沢',      lat:35.66138, lng:139.66792, toKomae:20},
-  {name:'世田谷代田',  lat:35.65878, lng:139.65528, toKomae:18},
-  {name:'梅ヶ丘',      lat:35.65705, lng:139.64465, toKomae:17},
-  {name:'豪徳寺',      lat:35.65419, lng:139.63623, toKomae:15},
-  {name:'経堂',        lat:35.64990, lng:139.62476, toKomae:13},
-  {name:'千歳船橋',    lat:35.64479, lng:139.61369, toKomae:11},
-  {name:'祖師ヶ谷大蔵',lat:35.63786, lng:139.60203, toKomae: 9},
-  {name:'成城学園前',  lat:35.63229, lng:139.58997, toKomae: 6},
-  {name:'喜多見',      lat:35.62706, lng:139.57538, toKomae: 4},
-  {name:'狛江',        lat:35.62142, lng:139.56494, toKomae: 0},
-];
-
 // ============================================================
 // State
 // ============================================================
 let S = {
-  lat:null, lng:null, locName:'取得中...', station:null,
-  distM:0, walkMin:0, walkSec:0,
-  trainIdx:0, countSec:0, interval:null
+  lat:null,lng:null,locName:'取得中...',
+  nearestSt:null,distM:0,walkMin:0,walkSec:0,
+  trainIdx:0,countSec:0,interval:null
 };
 
-function isHoliday() { const d=new Date().getDay(); return d===0||d===6; }
-function timetable()  { return isHoliday() ? KOMAE_ARR_HOLIDAY : KOMAE_ARR_WEEKDAY; }
-
+function isHoliday(){ const d=new Date().getDay(); return d===0||d===6; }
+function timetable(){ return isHoliday()?KOMAE_ARR_HOLIDAY:KOMAE_ARR_WEEKDAY; }
 function pad(n){ return String(n).padStart(2,'0'); }
 function fmt(h,m){ return `${pad(h)}:${pad(m)}`; }
 function addMin(str,add){
-  const [h,m]=str.split(':').map(Number);
-  const t=h*60+m+add; return `${pad(Math.floor(t/60)%24)}:${pad(t%60)}`;
+  const[h,m]=str.split(':').map(Number),t=h*60+m+add;
+  return `${pad(Math.floor(t/60)%24)}:${pad(t%60)}`;
 }
-function toSec(h,m){ return h*3600+m*60; }
 function nowSec(){ const n=new Date(); return n.getHours()*3600+n.getMinutes()*60+n.getSeconds(); }
 
 // ============================================================
-// GPS & Geocode
+// GPS
 // ============================================================
 function init(){
-  show('現在地を取得中…\n位置情報の許可をお願いします', true);
+  show('現在地を取得中…\n位置情報の許可をお願いします',true);
   document.getElementById('retryBtn').style.display='none';
   if(!navigator.geolocation){ showErr('位置情報が使えません'); return; }
   navigator.geolocation.getCurrentPosition(
     pos=>{ S.lat=pos.coords.latitude; S.lng=pos.coords.longitude;
-           show('場所を特定中...', true); geocode(); },
-    ()=>{ S.lat=35.6510; S.lng=139.6257; S.locName='経堂周辺（GPS失敗）'; compute(); },
-    {enableHighAccuracy:true, timeout:12000, maximumAge:60000}
+           show('場所を特定中...',true); geocode(); },
+    ()=>{ S.lat=35.6499; S.lng=139.6248; S.locName='経堂周辺（GPS失敗）'; compute(); },
+    {enableHighAccuracy:true,timeout:12000,maximumAge:60000}
   );
 }
 
 async function geocode(){
-  // まず国土地理院APIを試す、失敗したらNominatim(OpenStreetMap)を使う
-  let success = false;
-
-  // 方法①：国土地理院API
   try {
-    const r = await fetch(
-      `https://mreversegeocoder.gsi.go.jp/reverse-geocoder/LonLatToAddress?lon=${S.lng}&lat=${S.lat}`
-    );
-    const d = await r.json();
-    if(d && d.results) {
-      const res = d.results;
-      // muniNm=市区町村名, lv01Nm=大字町丁目
-      const city = res.muniNm || '';
-      const town = res.lv01Nm || '';
-      if(city || town) {
-        S.locName = (city + town) || '現在地';
-        success = true;
-      }
-    }
-  } catch(e){}
-
-  // 方法②：Nominatim (OpenStreetMap) - 国土地理院が失敗した場合
-  if(!success){
+    const r=await fetch(`https://mreversegeocoder.gsi.go.jp/reverse-geocoder/LonLatToAddress?lon=${S.lng}&lat=${S.lat}`);
+    const d=await r.json();
+    if(d&&d.results){
+      const city=d.results.muniNm||''; const town=d.results.lv01Nm||'';
+      S.locName=(city+town)||'現在地';
+    } else S.locName='現在地';
+  } catch(e){
     try {
-      const r = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?lat=${S.lat}&lon=${S.lng}&format=json&accept-language=ja`,
-        { headers: { 'Accept-Language': 'ja' } }
-      );
-      const d = await r.json();
-      if(d && d.address) {
-        const a = d.address;
-        // 市区町村＋町名を組み合わせる
-        const city  = a.city || a.town || a.village || a.county || '';
-        const ward  = a.suburb || a.neighbourhood || a.quarter || '';
-        const district = a.city_district || '';
-        // 優先順位：区名+町名 ＞ 市名+町名 ＞ 市名のみ
-        if(district && ward)      S.locName = district + ward;
-        else if(district)         S.locName = district;
-        else if(city && ward)     S.locName = city + ward;
-        else if(city)             S.locName = city;
-        else                      S.locName = '現在地';
-        success = true;
-      }
-    } catch(e){}
+      const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${S.lat}&lon=${S.lng}&format=json&accept-language=ja`);
+      const d=await r.json();
+      if(d&&d.address){
+        const a=d.address;
+        const city=a.city||a.town||a.village||'';
+        const ward=a.city_district||a.suburb||a.neighbourhood||'';
+        S.locName=(ward?ward+' ':'')+city||'現在地';
+      } else S.locName='現在地';
+    } catch(e2){ S.locName='現在地'; }
   }
-
-  if(!success) S.locName = '現在地';
   compute();
 }
 
 // ============================================================
-// 最寄り駅を探す
-// 小田急線は南西〜北東方向に走っているため
-// 単純な直線距離で最寄り駅を判定する
+// 最寄り駅を探す（全路線対象）
 // ============================================================
 function findNearest(){
-  let min=Infinity, best=STATIONS[0];
-  for(const st of STATIONS){
+  let min=Infinity, best=STATION_DB[0];
+  for(const st of STATION_DB){
     const d=dist(S.lat,S.lng,st.lat,st.lng);
     if(d<min){ min=d; best=st; }
   }
+  // 同名駅が複数ある場合は距離最小のものを採用済み
   return {st:best, distM:Math.round(min)};
 }
 
 function dist(la1,lo1,la2,lo2){
-  const R=6371000, dLa=(la2-la1)*Math.PI/180, dLo=(lo2-lo1)*Math.PI/180;
+  const R=6371000,dLa=(la2-la1)*Math.PI/180,dLo=(lo2-lo1)*Math.PI/180;
   const a=Math.sin(dLa/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLo/2)**2;
   return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
 
 // ============================================================
-// 次の電車を探す
-// 「最寄り駅の出発時刻」= 狛江着時刻 - 最寄り駅から狛江までの所要時間
-// カウントダウン = 最寄り駅出発時刻 - 現在時刻 - 徒歩時間
+// 次の小田急電車を探す
+// 「新宿発→狛江着」の狛江到着時刻テーブルから、
+//  現在地から新宿までの所要時間＋徒歩時間を引いて
+//  間に合う電車を検索
 // ============================================================
-function findTrain(walkTotalSec, startIdx){
-  const tbl = timetable();
-  const ns = nowSec();
-  // 最低でも「今から徒歩時間+1分」後に出発する電車を探す
-  const neededDepSec = ns + walkTotalSec + 60;
+function findTrain(walkSec, toShinjukuSec, startIdx){
+  const tbl=timetable();
+  const ns=nowSec();
+  // 新宿に到着できる最短時刻（秒）
+  const arrShinjukuSec = ns + walkSec + toShinjukuSec;
 
   for(let i=startIdx; i<tbl.length+startIdx; i++){
-    const idx = i % tbl.length;
-    const t = tbl[idx];
-    // 狛江着 → 最寄り駅発 = 狛江着 - toKomae分
-    let depSec = toSec(t.h, t.m) - S.station.toKomae * 60;
-    // 日付をまたぐ補正
-    if(depSec < 0) depSec += 86400;
-    if(depSec >= neededDepSec){
-      return {idx, train:t, depSec};
+    const idx=i%tbl.length;
+    const t=tbl[idx];
+    // 狛江着時刻を秒に変換
+    let komaeArrSec = t.h*3600+t.m*60;
+    if(komaeArrSec < ns) komaeArrSec += 86400; // 日付またぎ補正
+    // 新宿発時刻 = 狛江着 - 29分
+    const shinjukuDepSec = komaeArrSec - 29*60;
+    // 新宿到着 < 新宿出発 なら乗れる（1分の余裕を追加）
+    if(shinjukuDepSec >= arrShinjukuSec + 60){
+      return {idx, train:t, komaeArrSec, shinjukuDepSec};
     }
   }
-  // 見つからなければ最初の電車
-  const t = tbl[0];
-  let depSec = toSec(t.h,t.m) - S.station.toKomae*60 + 86400;
-  return {idx:0, train:t, depSec};
+  // 翌日最初
+  const t=tbl[0];
+  return {idx:0, train:t,
+    komaeArrSec:t.h*3600+t.m*60+86400,
+    shinjukuDepSec:t.h*3600+t.m*60+86400-29*60};
 }
 
 // ============================================================
 // 計算・開始
 // ============================================================
 function compute(){
-  const {st, distM} = findNearest();
-  S.station = st; S.distM = distM;
-  const walkTotalSec = Math.ceil(distM / 60 * 60); // 60m/分
-  S.walkMin = Math.floor(walkTotalSec/60);
-  S.walkSec = walkTotalSec % 60;
+  const{st,distM}=findNearest();
+  S.nearestSt=st; S.distM=distM;
+  const walkTotalSec=Math.ceil(distM/60*60); // 60m/分
+  S.walkMin=Math.floor(walkTotalSec/60);
+  S.walkSec=walkTotalSec%60;
 
-  const {idx, train, depSec} = findTrain(walkTotalSec, 0);
-  S.trainIdx = idx;
+  const toShinjukuSec=st.toShinjuku*60;
+  const{idx,train,komaeArrSec,shinjukuDepSec}=findTrain(walkTotalSec,toShinjukuSec,0);
+  S.trainIdx=idx;
 
-  // カウントダウン = 最寄り駅出発時刻 - 現在時刻 - 徒歩時間
-  S.countSec = Math.max(0, depSec - nowSec() - walkTotalSec);
+  // カウントダウン = 狛江到着時刻 - 現在時刻
+  S.countSec=Math.max(0, komaeArrSec - nowSec());
 
-  updateUI(train);
+  updateUI(train,komaeArrSec,shinjukuDepSec,walkTotalSec,toShinjukuSec);
   hide();
   if(S.interval) clearInterval(S.interval);
-  S.interval = setInterval(()=>tick(walkTotalSec), 1000);
+  S.interval=setInterval(()=>tick(walkTotalSec,toShinjukuSec),1000);
 }
 
-function tick(walkTotalSec){
+function tick(walkSec,toShinjukuSec){
   S.countSec--;
-  // 5分（300秒）を切ったら次の電車へ
-  if(S.countSec <= 300){
-    const {idx, train, depSec} = findTrain(walkTotalSec, (S.trainIdx+1));
-    S.trainIdx = idx;
-    S.countSec = Math.max(0, depSec - nowSec() - walkTotalSec);
-    updateUI(train);
-    notify(`⏭ 次の電車 ${fmtTrain(train)} に切り替えました`);
+  if(S.countSec<=300){
+    const{idx,train,komaeArrSec,shinjukuDepSec}=findTrain(walkSec,toShinjukuSec,S.trainIdx+1);
+    S.trainIdx=idx;
+    S.countSec=Math.max(0,komaeArrSec-nowSec());
+    updateUI(train,komaeArrSec,shinjukuDepSec,walkSec,toShinjukuSec);
+    const m=Math.floor(S.countSec/60),s=S.countSec%60;
+    notify(`⏭ 次の電車に切り替えました（狛江着 ${fmt(train.h,train.m)}）`);
     return;
   }
   updateCD();
 }
 
-function fmtTrain(t){
-  const tbl = timetable();
-  // 最寄り駅発時刻を計算
-  let depMin = t.h*60+t.m - S.station.toKomae;
-  if(depMin<0) depMin+=1440;
-  return fmt(Math.floor(depMin/60), depMin%60);
-}
-
 // ============================================================
 // UI
 // ============================================================
-function updateUI(train){
-  // 最寄り駅の発車時刻
-  let depTotalMin = train.h*60+train.m - S.station.toKomae;
-  if(depTotalMin<0) depTotalMin+=1440;
-  const depH=Math.floor(depTotalMin/60), depM=depTotalMin%60;
+function updateUI(train,komaeArrSec,shinjukuDepSec,walkSec,toShinjukuSec){
+  const st=S.nearestSt;
+  // 最寄り駅の出発時刻 = 新宿出発 - 新宿までの所要時間
+  const depSec=shinjukuDepSec - toShinjukuSec;
+  const depH=Math.floor(depSec/3600)%24;
+  const depM=Math.floor(depSec%3600/60);
+  // 新宿発時刻
+  const snjH=Math.floor(shinjukuDepSec/3600)%24;
+  const snjM=Math.floor(shinjukuDepSec%3600/60);
 
-  document.getElementById('curLoc').textContent   = S.locName;
-  document.getElementById('nearSt').textContent   = S.station.name+'駅';
-  document.getElementById('walkT').textContent    = S.walkSec>0 ? `${S.walkMin}分${S.walkSec}秒` : `${S.walkMin}分`;
-  document.getElementById('depStation').textContent = S.station.name;
-  document.getElementById('depTime').textContent  = fmt(depH,depM);
-  document.getElementById('trainType').textContent= train.type;
-  document.getElementById('nextT').textContent    = fmt(depH,depM);
-  document.getElementById('komaeArr').textContent = fmt(train.h,train.m);
-  document.getElementById('routeNote').textContent= `小田急線 ${train.type}`;
+  // 乗車駅の表示：小田急線の場合は最寄り駅、それ以外は新宿
+  const isOdakyu=st.line==='小田急線';
+  const boardSt=isOdakyu?st.name:'新宿';
+  const boardTime=isOdakyu?fmt(depH,depM):fmt(snjH,snjM);
+  const routeNote=isOdakyu
+    ?`小田急線 ${train.type}`
+    :`${st.line} → 新宿 → 小田急線 ${train.type}`;
 
-  const homeArr = addMin(fmt(train.h,train.m), 10);
-  document.getElementById('homeArr').textContent  = homeArr;
+  document.getElementById('curLoc').textContent=S.locName;
+  document.getElementById('nearSt').textContent=st.name+'駅';
+  document.getElementById('walkT').textContent=
+    S.walkSec>0?`${S.walkMin}分${S.walkSec}秒`:`${S.walkMin}分`;
+  document.getElementById('depStation').textContent=boardSt;
+  document.getElementById('depTime').textContent=boardTime;
+  document.getElementById('trainType').textContent=isOdakyu?train.type:'乗換あり';
+  document.getElementById('nextT').textContent=fmt(snjH,snjM);
+  document.getElementById('komaeArr').textContent=fmt(train.h,train.m);
+  document.getElementById('routeNote').textContent=routeNote;
+  document.getElementById('homeArr').textContent=addMin(fmt(train.h,train.m),10);
 
   updateCD();
 }
 
 function updateCD(){
   const s=S.countSec;
-  const m=Math.floor(s/60), sec=s%60;
-  document.getElementById('cdTime').textContent = `${pad(m)}:${pad(sec)}`;
-
-  let color = s>600 ? '#22c55e' : s>300 ? '#eab308' : s>120 ? '#f97316' : '#ef4444';
-  document.getElementById('cdTime').style.color = color;
-  document.getElementById('cdTime').classList.toggle('urgent', s<=120);
-
-  const maxSec=25*60, ratio=Math.min(s/maxSec,1);
+  const m=Math.floor(s/60),sec=s%60;
+  document.getElementById('cdTime').textContent=`${pad(m)}:${pad(sec)}`;
+  const color=s>600?'#22c55e':s>300?'#eab308':s>120?'#f97316':'#ef4444';
+  document.getElementById('cdTime').style.color=color;
+  document.getElementById('cdTime').classList.toggle('urgent',s<=120);
+  const maxSec=60*60,ratio=Math.min(s/maxSec,1);
   const ring=document.getElementById('ringFg');
-  ring.style.strokeDashoffset = 603*(1-ratio);
-  ring.style.stroke = color;
-
-  document.getElementById('cdSub').textContent =
-    s<=0?'出発時刻です！': s<=120?'急いで！': s<=300?'そろそろ準備を': '余裕あり';
+  ring.style.strokeDashoffset=603*(1-ratio);
+  ring.style.stroke=color;
+  document.getElementById('cdSub').textContent=
+    s<=0?'到着時刻です！':s<=120?'急いで！':s<=300?'もうすぐ':
+    s<=900?'そろそろ準備を':'余裕あり';
 }
 
 function openMap(e){
   e.preventDefault();
-  // 現在地 → 最寄り駅（徒歩）→ 狛江駅（電車）の乗換ルート
-  const stLat = S.station ? S.station.lat : 35.62142;
-  const stLng = S.station ? S.station.lng : 139.56494;
-  // Google Maps 乗換案内：出発地=現在地、目的地=狛江駅、電車+徒歩モード
-  const url = `https://www.google.com/maps/dir/?api=1`
-    + `&origin=${S.lat},${S.lng}`
-    + `&destination=35.62142,139.56494`
-    + `&travelmode=transit`
-    + `&transit_mode=rail`;
+  const url=`https://www.google.com/maps/dir/?api=1`
+    +`&origin=${S.lat},${S.lng}`
+    +`&destination=35.62142,139.56494`
+    +`&travelmode=transit`;
   window.open(url,'_blank');
 }
-
 function notify(msg){
   const el=document.getElementById('notice');
   el.textContent=msg; el.classList.add('show');
-  setTimeout(()=>el.classList.remove('show'),3500);
+  setTimeout(()=>el.classList.remove('show'),4000);
 }
 function show(msg,spin){
   document.getElementById('overlay').classList.remove('hidden');
@@ -526,9 +633,8 @@ function showErr(msg){
   document.getElementById('ovText').textContent=msg;
   document.getElementById('retryBtn').style.display='block';
 }
-
 if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
-window.addEventListener('load', init);
+window.addEventListener('load',init);
 </script>
 </body>
 </html>

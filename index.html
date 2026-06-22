@@ -92,7 +92,7 @@ body{display:flex;flex-direction:column;min-height:100vh;min-height:-webkit-fill
   <div><div class="tb-label">種別</div><div class="train-badge" id="trainType">—</div></div>
 </div>
 <div class="countdown-section">
-  <div class="cd-label">狛江駅 到着まで</div>
+  <div class="cd-label">出発まで</div>
   <div class="cd-ring">
     <svg viewBox="0 0 210 210" width="210" height="210">
       <circle class="ring-bg" cx="105" cy="105" r="96"/>
@@ -534,10 +534,12 @@ function compute(){
   const{idx,train,komaeArrSec,shinjukuDepSec}=findTrain(walkTotalSec,toShinjukuSec,0);
   S.trainIdx=idx;
 
-  // カウントダウン = 狛江到着時刻 - 現在時刻
-  S.countSec=Math.max(0, komaeArrSec - nowSec());
+  // カウントダウン = 最寄り駅の電車出発時刻 - 現在時刻 - 徒歩時間
+  // 最寄り駅出発時刻 = 新宿出発 - 新宿までの所要時間
+  const nearestDepSec = shinjukuDepSec - toShinjukuSec;
+  S.countSec = Math.max(0, nearestDepSec - nowSec() - walkTotalSec);
 
-  updateUI(train,komaeArrSec,shinjukuDepSec,walkTotalSec,toShinjukuSec);
+  updateUI(train,komaeArrSec,shinjukuDepSec,nearestDepSec,walkTotalSec,toShinjukuSec);
   hide();
   if(S.interval) clearInterval(S.interval);
   S.interval=setInterval(()=>tick(walkTotalSec,toShinjukuSec),1000);
@@ -545,12 +547,12 @@ function compute(){
 
 function tick(walkSec,toShinjukuSec){
   S.countSec--;
-  if(S.countSec<=300){
+  if(S.countSec<=0){
     const{idx,train,komaeArrSec,shinjukuDepSec}=findTrain(walkSec,toShinjukuSec,S.trainIdx+1);
     S.trainIdx=idx;
-    S.countSec=Math.max(0,komaeArrSec-nowSec());
-    updateUI(train,komaeArrSec,shinjukuDepSec,walkSec,toShinjukuSec);
-    const m=Math.floor(S.countSec/60),s=S.countSec%60;
+    const nearestDepSec = shinjukuDepSec - toShinjukuSec;
+    S.countSec=Math.max(0, nearestDepSec - nowSec() - walkSec);
+    updateUI(train,komaeArrSec,shinjukuDepSec,nearestDepSec,walkSec,toShinjukuSec);
     notify(`⏭ 次の電車に切り替えました（狛江着 ${fmt(train.h,train.m)}）`);
     return;
   }
@@ -560,7 +562,7 @@ function tick(walkSec,toShinjukuSec){
 // ============================================================
 // UI
 // ============================================================
-function updateUI(train,komaeArrSec,shinjukuDepSec,walkSec,toShinjukuSec){
+function updateUI(train,komaeArrSec,shinjukuDepSec,nearestDepSec,walkSec,toShinjukuSec){
   const st=S.nearestSt;
   // 最寄り駅の出発時刻 = 新宿出発 - 新宿までの所要時間
   const depSec=shinjukuDepSec - toShinjukuSec;
